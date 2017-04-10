@@ -1,0 +1,12 @@
+[submodule "ext/nanogui"]
+	path = ext/nanogui
+	url = https://github.com/wjakob/nanogui
+[submodule "ext/pcg32"]
+	path = ext/pcg32
+	url = https://github.com/wjakob/pcg32
+[submodule "ext/tbb"]
+	path = ext/tbb
+	url = https://github.com/wjakob/tbb
+[submodule "ext/dset"]
+	path = ext/dset
+	url = https://github.com/wjakob/dset
