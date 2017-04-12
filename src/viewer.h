@@ -119,7 +119,8 @@ protected:
     CheckBox *mLayers[LayerCount];
 	FloatBox<Float> *mScaleBox;
 
-	bool mEdgeTagging_done;
+	CheckBox *mEdgeTagging;
+
 	Button *mOutputBtn;
 	CheckBox *mShow_F_done;
 	CheckBox *mShow_E_done;

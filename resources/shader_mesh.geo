@@ -19,6 +19,11 @@ out fData {
 } frag;
 
 void main() {
+if (dot(split, gl_in[0].gl_Position) < 0 ||
+        dot(split, gl_in[1].gl_Position) < 0 ||
+        dot(split, gl_in[2].gl_Position) < 0)
+        return;
+		
     frag.normal = normalize(cross(
         (view * (model * (gl_in[1].gl_Position - gl_in[0].gl_Position))).xyz,
         (view * (model * (gl_in[2].gl_Position - gl_in[0].gl_Position))).xyz));

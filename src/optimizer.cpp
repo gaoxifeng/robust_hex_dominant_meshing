@@ -3,12 +3,13 @@
 Optimizer::Optimizer(MultiResolutionHierarchy &mRes)
     : mRes(mRes), mRunning(false), mOptimizeOrientations(false),
       mOptimizePositions(false), mAlignment(true), mRandomization(true), mExtrinsic(true),
-      mHierarchy(true), mLevel(0), mLevelIterations(0), mMaxIterations(200) {
+      mHierarchy(true), mLevel(0), mLevelIterations(0), mMaxIterations(20) {
     mThread = std::thread(&Optimizer::run, this);
 }
 
 void Optimizer::setOptimizeOrientations(bool value) {
     std::lock_guard<ordered_lock> lock(mRes.mutex());
+	if (mRes.tetMesh()) mMaxIterations = 200;else mMaxIterations = 20;
     mOptimizeOrientations = value;
     mLevel = mRes.levels() - 2;
     mLevelIterations = 0;
@@ -16,7 +17,8 @@ void Optimizer::setOptimizeOrientations(bool value) {
 
 void Optimizer::setOptimizePositions(bool value) {
     std::lock_guard<ordered_lock> lock(mRes.mutex());
-    mOptimizePositions = value;
+	if (mRes.tetMesh()) mMaxIterations = 200; else mMaxIterations = 20;
+	mOptimizePositions = value;
     mLevel = mRes.levels() - 2;
     mLevelIterations = 0;
 }
@@ -43,10 +45,7 @@ void Optimizer::run() {
             if (mRes.tetMesh())
                 mRes.smoothPositionsTet(mLevel, mAlignment, mRandomization);
             else {
-                if (!mRes.combed())
-                    mRes.smoothPositionsTri(mLevel, mAlignment, mRandomization, mExtrinsic);
-                else
-                    mRes.smoothPositionsTriCombed();
+                mRes.smoothPositionsTri(mLevel, mAlignment, mRandomization, mExtrinsic);
             }
         }
 

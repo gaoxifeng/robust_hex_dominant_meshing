@@ -81,9 +81,6 @@ public:
     void smoothPositionsTet(uint32_t l, bool alignment, bool randomization);
     void smoothPositionsTri(uint32_t l, bool alignment, bool randomization, bool extrinsic);
     void smoothPositionsTriCombed();
-	void projectBack3D();
-	void projectBack3D2(vector<vector<uint32_t>> &VSets);
-	bool phong_projection(vector<uint32_t> tids, vector<vector<uint32_t>> &vnfs, Vector3d &v, Vector3d &interpolP, Vector3d &interpolN, bool global);
 
     void detectPositionSingularitiesTri();
     void detectPositionSingularitiesTet();
@@ -94,7 +91,6 @@ public:
 	void init_edge_tagging3D();
 //mesh extraction
 		bool tagging_collapseTri(bool triangle_Switch);
-		uint32_t tagging_triangleTri();
 		uint32_t decompose_polygon();
 
 	bool meshExtraction2D();
@@ -125,18 +121,13 @@ public:
 		Float compute_cost_edge3D(uint32_t v0, uint32_t v1);
 		void printout_elements(vector<uint32_t> &fs, uint32_t id, uint32_t subid);
 		void printout_elements(vector<uint32_t> &fs, vector<vector<uint32_t>> &HFs, uint32_t id, uint32_t subid);
-
-		uint32_t decompose_polyhedral();
-
+		
 		void printout_sim_step(std::vector<uint32_t> &fs, uint32_t id);
 		void printout_sim_step_decompose(std::vector<uint32_t> &fs, uint32_t id, uint32_t subid);
 
 	void composit_edges_colors(MatrixXf &Result_Vs, std::vector<tuple_E> &Es_to_render, MatrixXf &Result_edges);
 	void composit_edges_centernodes_triangles(std::vector<std::vector<uint32_t>> &Actual_Fs, MatrixXf &nodes, MatrixXf &Result_edges, MatrixXf &center_nodes, MatrixXu &Triangles);
-
-	//others
-	bool combed() const { return mO_combed.size() > 0; }
-
+	
     const MatrixXf &orientationSingularities() const { return mOrientationSingularities; }
     const MatrixXf &positionSingularities() const { return mPositionSingularities; }
 
@@ -156,7 +147,6 @@ public:
 	void setScale(Float scale) { 
 		ratio_scale = scale; 
 		mScale = ms.mAverageEdgeLength* scale; 
-		//mScale = ms.mMaximumEdgeLength * scale;
 		mInvScale = 1.f / mScale;}
 
     ordered_lock &mutex() const { return mMutex; }

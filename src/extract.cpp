@@ -56,11 +56,13 @@ void construct_Es_FEs()
 		FEs[std::get<2>(temp[i])][std::get<3>(temp[i])] = E_num;
 	}
 
-	V_pvs.resize(mV_copy2D.cols());
-	for (uint32_t i = 0; i < mEs.size(); i++) {
-		uint32_t v0 = get<0>(mEs[i]), v1 = get<1>(mEs[i]);
-		V_pvs[v0].push_back(v1);
-		V_pvs[v1].push_back(v0);
+	if (mV_copy2D.cols()) {
+		V_pvs.resize(mV_copy2D.cols());
+		for (uint32_t i = 0; i < mEs.size(); i++) {
+			uint32_t v0 = get<0>(mEs[i]), v1 = get<1>(mEs[i]);
+			V_pvs[v0].push_back(v1);
+			V_pvs[v1].push_back(v0);
+		}
 	}
 	E_pfs.resize(mEs.size());	
 	for (uint32_t i = 0; i < FEs.size(); i++) for (auto eid : FEs[i]) { E_pfs[eid].push_back(i); }
@@ -211,8 +213,6 @@ void MultiResolutionHierarchy::init_edge_tagging2D() {
 	mFs2D.resize(mF.cols());
 	for (uint32_t i = 0; i < mF.cols(); ++i) for (int j = 0; j < 3; ++j) mFs2D[i].push_back(mF(j, i));
 	construct_Es_FEs();
-
-	//write_surface_mesh_OBJ(mV_tag, F_tag, "C:/xgao/meshing/code/robust_instant_meshing/datasets/compareIM/armadillo_IM.obj");
 
 	for (uint32_t i = 0; i < mEs.size(); ++i) {
 		uint32_t v0 = std::get<0>(mEs[i]), v1 = std::get<1>(mEs[i]);
@@ -814,91 +814,6 @@ bool MultiResolutionHierarchy::tagging_collapseTri(bool triangle_Switch)
 	std::cout << Es_reddash.size() << " remaining" << endl;
 
 	return entered_triangle;
-}
-uint32_t MultiResolutionHierarchy::tagging_triangleTri()
-{
-	uint32_t n_tri = 0;
-	std::vector<std::vector<uint32_t>> Es_nfs(mEs.size());
-	mF_flag.resize(F_tag.size()); std::fill(mF_flag.begin(), mF_flag.end(), true);
-	//Es_nfs
-	for (uint32_t i = 0; i < FEs_tag.size(); i++)
-		for (uint32_t j = 0; j < FEs_tag[i].size(); j++)
-			Es_nfs[FEs_tag[i][j]].push_back(i);
-
-	std::function<void(std::vector<uint32_t> &, Float &)> angle_2es =
-		[&](std::vector<uint32_t> & es, Float & angle) -> void {
-		Vector3f vec0 = mV_tag.col(V_map[std::get<0>(mEs[es[0]])]) - mV_tag.col(V_map[std::get<1>(mEs[es[0]])]);
-		Vector3f vec1 = mV_tag.col(V_map[std::get<0>(mEs[es[1]])]) - mV_tag.col(V_map[std::get<1>(mEs[es[1]])]);
-		if (V_map[std::get<0>(mEs[es[0]])] != V_map[std::get<0>(mEs[es[1]])])
-			vec0 = -vec0;
-		vec0.normalize(); vec1.normalize();
-		Float dot_ = vec0.dot(vec1);
-		angle = std::acos(dot_);
-		if (angle <= PAI && angle >= PAI *3.0 / 4)
-			angle -= PAI / 2;
-	};
-
-	for (uint32_t i = 0; i < F_tag.size(); i++) {
-		if (mF_flag[i] && F_tag[i].size() == 3) {
-			Float cost = std::numeric_limits<Float>::infinity();
-			std::vector<std::tuple<Float, uint32_t>> candidates(3);
-			for (uint32_t j = 0; j < 3; j++) {
-				std::vector<uint32_t> es_2(2);
-					Float angle;
-					es_2[0] = FEs_tag[i][(j + 1) % 3];
-					es_2[1] = FEs_tag[i][(j + 2) % 3];
-					angle_2es(es_2, angle);
-					//Float cost_ = std::abs(angle0 - PAI / 2) + abs(angle1 - PAI / 2) + abs(angle2 - PAI / 2);
-					Float cost_ = std::abs(angle - PAI / 2);
-					candidates[j] = std::make_tuple(cost_, FEs_tag[i][j]);
-			}
-			std::sort(candidates.begin(), candidates.end());
-
-			bool fixed = false;
-			for (uint32_t j = 0; j < candidates.size(); j++) {
-				std::vector<std::vector<uint32_t>> fvs, fes;
-				std::vector<uint32_t> pvs, pes, vs_disgard, es_disgard;
-
-				uint32_t eid = std::get<1>(candidates[j]);
-				if (Es_nfs[eid].size() == 1)
-					continue;
-				for (short k = 0; k < Es_nfs[eid].size(); k++) {
-					fvs.push_back(F_tag[Es_nfs[eid][k]]);
-					fes.push_back(FEs_tag[Es_nfs[eid][k]]);
-				}
-				if (!simple_polygon(fvs, fes, pvs, pes, vs_disgard, es_disgard))
-					continue;
-				uint32_t f0 = Es_nfs[eid][0], f1 = Es_nfs[eid][1];
-				if (f0 == i) std::swap(f0, f1);
-				F_tag[f0] = pvs; FEs_tag[f0] = pes;
-				for (uint32_t k = 0; k < es_disgard.size(); k++)
-					Es_nfs[es_disgard[k]].clear();
-
-				mF_flag[f1] = false;
-				for (uint32_t k = 0; k < FEs_tag[f1].size(); k++) {
-					uint32_t eid_ = FEs_tag[f1][k];
-					std::replace(Es_nfs[eid_].begin(), Es_nfs[eid_].end(), f1, f0);
-				}
-
-				fixed = true;
-				n_tri++;
-				break;
-			}
-			if (!fixed)
-				;// std::cout << "A triangle left!" << endl;
-		}
-	}
-
-	std::vector<std::vector<uint32_t>> F_tag_, FEs_tag_;
-	F_tag_.reserve(F_tag.size()); FEs_tag_.reserve(F_tag.size());
-	for (uint32_t i = 0; i < F_tag.size(); i++)
-		if (mF_flag[i]) {
-			F_tag_.push_back(F_tag[i]);
-			FEs_tag_.push_back(FEs_tag[i]);
-		}
-	F_tag_.swap(F_tag); FEs_tag_.swap(FEs_tag);
-
-	return n_tri;
 }
 
 bool MultiResolutionHierarchy::meshExtraction2D() {
@@ -1798,82 +1713,6 @@ Float MultiResolutionHierarchy::compute_cost_edge2D_angle(int32_t v0, int32_t v1
 	std::sort(angles.begin(), angles.end(), std::greater<double>());
 
 	return angles[0];
-}
-void MultiResolutionHierarchy::tagging_singularities_T_nodes() {
-	enum  V_type
-	{
-		regular =0,
-		singular,
-		t_node,
-		boundary,
-		s_t_node,
-	};
-	vector<std::vector<uint32_t>> Vs_nes(mV_tag.cols()), Vs_nfs(mV_tag.cols());
-	vector<bool> mV_B_flag(mV_copy2D.cols(), false);
-	V_flag.resize(mV_copy2D.cols());
-	fill(V_flag.begin(), V_flag.end(), V_type::regular);//boundary flag
-
-	for (auto e : mEs) if (std::get<2>(e) == 1) { mV_B_flag[std::get<1>(e)] = mV_B_flag[std::get<0>(e)] = true; }
-	for (uint32_t i = 0; i < mEs.size(); i++) {
-		uint32_t v0 = std::get<0>(mEs[i]), v1 = std::get<1>(mEs[i]);
-		Vs_nes[v0].push_back(i);
-		Vs_nes[v1].push_back(i);
-	}
-	for (uint32_t f = 0; f < F_tag.size(); ++f) for (auto vid : F_tag[f]) Vs_nfs[vid].push_back(f);
-
-	vector<int32_t> V_tags(mV_tag.cols(),0);//0-regular, 1-singular, 2-t_node, 3 -boundary, and 4 both singular & t_node
-	for (uint32_t i = 0; i < Vs_nfs.size(); i++) {
-		if (mV_B_flag[i]) {
-			V_flag[i] = V_type::boundary;
-			continue;
-		}
-
-		if (Vs_nes[i].size()!=4) {
-			V_flag[i] = V_type::singular;
-			continue;
-		}
-	}
-	for (uint32_t i = 0; i < F_tag.size(); i++) {
-		if (F_tag[i].size() == 5) {
-			vector<int32_t> t_candidates;
-			for (uint32_t j = 0; j < F_tag[i].size(); j++) {
-				//if (Vs_nes[F_tag[i][j]].size() == 3 && !mV_B_flag[F_tag[i][j]]) t_candidates.push_back(j);
-				if (mV_B_flag[F_tag[i][j]]) {
-					if (Vs_nes[F_tag[i][j]].size() == 3 || Vs_nes[F_tag[i][j]].size() == 2) t_candidates.push_back(j);
-				}
-				else{
-					if (Vs_nes[F_tag[i][j]].size() == 3) t_candidates.push_back(j);
-				}
-			}
-			if (t_candidates.size()) {
-
-				vector<tuple<double, uint32_t>> vs_rank;
-				for (auto v_id:t_candidates) {
-					int32_t v0_pre = (v_id - 1 + F_tag[i].size()) % F_tag[i].size(), v0_aft = (v_id + 1) % F_tag[i].size();
-
-					MatrixXf bes_vec(3, 2);
-					bes_vec.col(0) = (mV_tag.col(F_tag[i][v_id]) - mV_tag.col(F_tag[i][v0_pre])).normalized();
-					bes_vec.col(1) = (mV_tag.col(F_tag[i][v_id]) - mV_tag.col(F_tag[i][v0_aft])).normalized();
-
-					Float dot_ = bes_vec.col(0).dot(bes_vec.col(1));
-					Float angle = std::acos(dot_);
-					Float cost = std::abs(angle - PAI);// (std::abs(n.sum()));
-					vs_rank.push_back(std::make_tuple(cost, v_id));
-				}
-				sort(vs_rank.begin(), vs_rank.end());
-				V_flag[get<1>(vs_rank[0])] = V_type::t_node;
-			}
-			else {
-				cout << "singular & t-node pentagon "<<i << endl;
-			}
-		}
-	}
-	//char path[1024], path_[1024];
-	//strcpy(path_, outpath.c_str());
-	//strncpy(path_, outpath.c_str(), sizeof(path_));
-	//path_[sizeof(path_) - 1] = 0;
-	//sprintf(path, "%s%s", path_, "_V_flag.txt");
-	//write_Vertex_Types_TXT(V_flag, path);
 }
 
 uint32_t MultiResolutionHierarchy::decompose_polygon() {

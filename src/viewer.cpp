@@ -66,23 +66,10 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 			(const char *)shader_singularity_tet_frag);
 
 
-	mExtractionResultShader_E_tagging.init("Shader_E_tagging",
-		(const char *)shader_singularity_tet_vert,
-		(const char *)shader_singularity_tet_frag);
-	mExtractionResultShader_E_degeneracy.init("Shader_E_tagging",
-		(const char *)shader_singularity_tet_vert,
-		(const char *)shader_singularity_tet_frag);
-	mExtractionResultShader_E_triangle.init("Shader_E_tagging",
-		(const char *)shader_singularity_tet_vert,
-		(const char *)shader_singularity_tet_frag);
 	mExtractionResultShader_E_done.init("Shader_E_local",
 		(const char *)shader_singularity_tet_vert,
 		(const char *)shader_singularity_tet_frag);
 
-	mExtractionResultShader_F_done_local.init("Shader_F_tagging",
-		(const char *)shader_mesh_vert,
-		(const char *)shader_mesh_frag,
-		(const char *)shader_mesh_geo);
 	mExtractionResultShader_F_done.init("Shader_F_local",
 		(const char *)shader_mesh_vert,
 		(const char *)shader_mesh_frag,
@@ -266,7 +253,7 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
         mOptimizer->setOptimizeOrientations(value);
         mOptimizer->notify();
 
-        //mLayers[Layers::OrientationField]->setChecked(true);
+        mLayers[Layers::OrientationField]->setChecked(true);
         mLayers[Layers::OrientationSingularities]->setChecked(true);
         mLayers[Layers::PositionField]->setChecked(false);
         mLayers[Layers::PositionSingularities]->setChecked(false);
@@ -296,22 +283,24 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 
 	morphPopup->setLayout(new GroupLayout());
 
-	mEdgeTagging_done = false;
-	mEdgeTaggingBtn = new Button(morphPopup, "Coloring", ENTYPO_ICON_FLASH);
-	mEdgeTaggingBtn->setBackgroundColor(Color(0, 0, 255, 25));
-	mEdgeTaggingBtn->setFlags(Button::Flags::ToggleButton);
-	mEdgeTaggingBtn->setChangeCallback([&](bool value) {
+	mEdgeTagging = new CheckBox(morphPopup, "Coloring");
+	mEdgeTagging->setId("showedgetags");
+	mEdgeTagging->setChecked(false);
+	mEdgeTagging->setCallback([&](bool value) {
 		if (!mRes.tetMesh())
 			mRes.init_edge_tagging2D();
 		else
 		{
 			mRes.init_edge_tagging3D();
 		}
-		mEdgeTagging_done = true;
 		auto const &R = mRes.E_rend;
 		mExtractionResultShader.bind();
 		mExtractionResultShader.uploadAttrib("position", MatrixXf(R.block(0, 0, 3, R.cols())));
 		mExtractionResultShader.uploadAttrib("color", MatrixXf(R.block(3, 0, 3, R.cols())));
+
+		mLayers[Layers::PositionField]->setChecked(false);
+		mLayers[Layers::PositionSingularities]->setChecked(false);
+		mLayers[Layers::Boundary]->setChecked(false);
 	});
 	Slider *slider2 = new Slider(morphPopup);
 	slider2->setValue(0.0);
@@ -536,7 +525,6 @@ void Viewer::drawContents() {
     Eigen::Vector4f civ =
         (view * model).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
 
-    // XXX improve this..
     if (mRes.tetMesh()) {
         mOrientationFieldShaderTet.bind();
         mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
@@ -547,12 +535,6 @@ void Viewer::drawContents() {
 
     mPositionFieldShader.bind();
     mPositionFieldShader.uploadAttrib("o", mRes.O());
-
-	if (mEdgeTagging_done) {
-		mExtractionResultShader2.bind();
-		mExtractionResultShader2.uploadAttrib("position", MatrixXf(mRes.E_I_rend.block(0, 0, 3, mRes.E_I_rend.cols())));
-		mExtractionResultShader2.uploadAttrib("color", MatrixXf(mRes.E_I_rend.block(3, 0, 3, mRes.E_I_rend.cols())));
-	}
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -651,20 +633,17 @@ void Viewer::drawContents() {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
- //   if (mLayers[ExtractionResult]->checked()) {
- //       auto &shader = mExtractionResultShader;
- //       shader.bind();
- //       shader.setUniform("split", mSplit, false);
- //       shader.setUniform("mvp", mvp);
-	//	shader.drawArray(GL_LINES, 0, mRes.E_rend.cols());
-	//}
-	//if (mLayers[ExtractionResult2]->checked()) {
-	//	auto &shader = mExtractionResultShader2;
-	//	shader.bind();
-	//	shader.setUniform("split", mSplit, false);
-	//	shader.setUniform("mvp", mvp);
-	//	shader.drawArray(GL_LINES, 0, mRes.E_I_rend.cols());
-	//}
+	if (mEdgeTagging->checked()) {
+		mExtractionResultShader.bind();
+		mExtractionResultShader.uploadAttrib("position", MatrixXf(mRes.E_I_rend.block(0, 0, 3, mRes.E_I_rend.cols())));
+		mExtractionResultShader.uploadAttrib("color", MatrixXf(mRes.E_I_rend.block(3, 0, 3, mRes.E_I_rend.cols())));
+		auto &shader = mExtractionResultShader;
+		shader.bind();
+		shader.setUniform("split", mSplit, false);
+		shader.setUniform("mvp", mvp);
+		shader.drawArray(GL_LINES, 0, mRes.E_I_rend.cols());
+	}
+
 
 	if (mShow_F_done->checked()) {
 		mExtractionResultShader_F_done.bind();
@@ -672,6 +651,7 @@ void Viewer::drawContents() {
 		mExtractionResultShader_F_done.setUniform("model", model);
 		mExtractionResultShader_F_done.setUniform("view", view);
 		mExtractionResultShader_F_done.setUniform("proj", proj);
+		mExtractionResultShader_F_done.setUniform("split", mSplit, false);
 		mExtractionResultShader_F_done.setUniform("base_color", mBaseColorBoundary);
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		glPolygonOffset(1.0, 1.0);
