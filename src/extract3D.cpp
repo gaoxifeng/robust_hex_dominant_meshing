@@ -765,12 +765,6 @@ void MultiResolutionHierarchy::orient_hybrid_mesh(MatrixXf &HV, vector<vector<ui
 			pf_temp.push(nfid); mpF_flag[nfid] = false;
 		}
 	}
-	//double check boundary faces
-	//for (uint32_t i = 0; i < mpF_boundary_flag.size(); i++)if (mpF_boundary_flag[i] && mpF_flag[i]) {
-	//	cout << "this face is not being touched " << i <<"with size "<<HF[i].size()<<" :"<< endl;
-	//	for (auto vid : HF[i])cout << vid << endl;
-	//	system("PAUSE");
-	//}
 
 	Float res = 0;
 	Vector3f ori; ori.setZero();
@@ -902,119 +896,6 @@ void MultiResolutionHierarchy::swap_data3D() {
 	construct_Es_Fs_Polyhedral();
 }
 
-bool MultiResolutionHierarchy::extractTet()
-{
-	init_edge_tagging3D();
-	mV_tag = mO[0]; newQ = mQ[0];
-	newN3D = mN[0]; newV3D = mV[0];
-	newC3D = mC[0];
-	for (uint32_t i = 0; i < mpEs.size(); ++i) {
-		switch (std::get<4>(mpEs[i]))
-		{
-			case Edge_tag::R: Es_red.push(mpEs[i]);  break;// break; //
-			case Edge_tag::B: break;
-			case Edge_tag::D: Es_red.push(mpEs[i]);  break; //break; 
-			//case 'D': break; 
-			case Edge_tag::H: Es_red.push(mpEs[i]); break; //break; 
-			default: throw std::runtime_error("stuck at a invalid color!");
-		}
-		std::get<4>(mpEs[i]) = Edge_tag::B;
-	}
-
-	//return true;
-	Timer<> timer;
-	timer.beginStage("simplifying 3D mesh");
-	tagging_collapseTet();
-	timer.endStage("simplifying 3D mesh done in ");
-
-	if (decomposes)decompose_polyhedral();
-	else {
-		P_tag.clear();
-		for (uint32_t i = 0; i < mpP_flag.size(); i++)
-			if (mpP_flag[i]) P_tag.push_back(mpPs[i]);
-
-		F_tag.clear(); FEs_tag.clear();
-		F_tag.resize(mpFes.size()); FEs_tag.resize(mpFes.size());
-		for (uint32_t i = 0; i < mpFes.size(); i++)
-			if (mpFes[i].size()) {
-				F_tag[i] = mpFvs[i];
-				FEs_tag[i]= mpFes[i];
-			}
-	}
-
-	uint32_t largest_polyhdral = 0;
-	for (uint32_t i = 0; i < P_tag.size(); i++)
-		if (P_tag[i].size() > largest_polyhdral) largest_polyhdral = P_tag[i].size();
-	
-	uint32_t hex_num = 0; std::vector<uint32_t> H_type(largest_polyhdral + 1, 0), F_type(F_tag.size(), 0);
-	std::vector<bool> Hex_flag(P_tag.size(), false);
-	for (uint32_t i = 0; i < P_tag.size(); i++) {
-		H_type[P_tag[i].size()]++;
-		//find hex
-		if (P_tag[i].size() == 6) {
-			bool hex = true;
-			for (uint32_t j = 0; j < 6; j++)
-				if (F_tag[P_tag[i][j]].size() != 4)
-					hex = false;
-			if (hex) {
-				for (uint32_t j = 0; j < 6; j++)
-					F_type[P_tag[i][j]] = 1;
-				hex_num++;
-				Hex_flag[i] = true;
-			}
-		}
-	}
-	std::cout << "Total polyhedra: " << P_tag.size() << "  Hex_num: " << hex_num << "  Ratio: " << Float(hex_num) / P_tag.size() << endl;
-	for (uint32_t i = 0; i < H_type.size(); i++)
-		if (H_type[i]) std::cout << i << "_thhedral: " << H_type[i] << endl;
-
-	F_tag_type.clear();
-	for (uint32_t i = 0; i < FEs_tag.size(); i++) {
-		for(auto eid: FEs_tag[i]) mpE_flag[eid] = true;
-		F_tag_type.push_back(F_type[i]);
-	}
-	//E_tag_left_rend, E_tag_rend, mV_tag_rend, F_tag_rend
-	while (!Es_red.empty()) {
-		tuple_E e = Es_red.top(); Es_red.pop();
-		std::get<0>(e) = pV_map[std::get<0>(e)];
-		std::get<1>(e) = pV_map[std::get<1>(e)];
-		Es_reddash_left.push_back(e);
-	}
-	E_tag_left_rend.resize(6, Es_reddash_left.size() * 2);
-	composit_edges_colors(mV_tag, Es_reddash_left, E_tag_left_rend);
-
-	uint32_t valid_e_num = 0;
-	Es_reddash_left.clear();
-	for (uint32_t i = 0; i < mpE_flag.size(); i++)
-		if (mpE_flag[i]) { 
-			tuple_E e = mpEs[i];
-			std::get<0>(e) = pV_map[std::get<0>(e)];
-			std::get<1>(e) = pV_map[std::get<1>(e)];
-			Es_reddash_left.push_back(e); 
-			valid_e_num++; 
-		}
-	E_tag_rend.setZero();
-	E_tag_rend.resize(6, 2* valid_e_num);
-	composit_edges_colors(mV_tag, Es_reddash_left, E_tag_rend);
-
-	composit_edges_centernodes_triangles(F_tag, mV_tag, E_tag_rend, mV_tag_rend, F_tag_rend);
-	//output
-	reindex_3D(mV_tag, F_tag, P_tag);
-
-
-	std::vector<std::vector<bool>> PF_flag;
-	std::cout << "start orient directions..." << endl;
-	orient_hybrid_mesh(mV_tag, F_tag, P_tag, PF_flag);
-	char path[300];
-	sprintf(path, "%s", "C:/xgao/hex_meshing/code2/robust_instant_meshing/datasets/out_surface_.obj");
-	write_surface_mesh_OBJ(mV_tag, F_tag, path);
-
-	sprintf(path, "%s", "C:/xgao/hex_meshing/code2/robust_instant_meshing/datasets/out_polyhedral_.HYBRID");
-
-	write_volume_mesh_HYBRID(mV_tag, F_tag, P_tag, Hex_flag, PF_flag, path);
-
-	return true;
-}
 bool MultiResolutionHierarchy::meshExtraction3D() {
 	Timer<> timer;
 	//std::cout << "Initial: construct_Es_TetEs_Fs_TetFs_FEs" << endl;
@@ -1134,20 +1015,7 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 		}
 		else h_num = P_tag.size();
 		times++;
-		/*if (times == 1) {
-			mV_tag = mO_copy; newQ = mQ_copy;
-			swap_data3D();
-			break;
-			std::vector<std::vector<bool>> PF_flag;
-			std::cout << "start orient directions..." << endl;
-			orient_hybrid_mesh(mO_copy, mpFvs, mpPs, PF_flag);
-			system("PAUSE");
-		}*/
-
 	}
-	//cout << "outside the while-loop" << endl;
-
-	if(decomposes) decompose_polyhedral();
 
 	uint32_t largest_polyhdral = 0;
 	for (uint32_t i = 0; i < P_tag.size(); i++)
@@ -1171,27 +1039,6 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 			}
 		}
 	}
-
-	//std::cout << "Total polyhedra: " << P_tag.size() << "  Hex_num: " << hex_num << "  Ratio: " << Float(hex_num) / P_tag.size() << endl;
-	//for (uint32_t i = 0; i < H_type.size(); i++)
-	//	if (H_type[i]) std::cout << i << "_thhedral: " << H_type[i] << endl;
-
-	//E_tag_left_rend, E_tag_rend, mV_tag_rend, F_tag_rend
-	while (!Es_red.empty()) {
-		tuple_E e = Es_red.top(); Es_red.pop();
-		std::get<0>(e) = pV_map[std::get<0>(e)];
-		std::get<1>(e) = pV_map[std::get<1>(e)];
-		Es_reddash_left.push_back(e);
-	}
-	E_tag_left_rend.resize(6, Es_reddash_left.size() * 2);
-	composit_edges_colors(mV_tag, Es_reddash_left, E_tag_left_rend);
-
-	E_tag_rend.setZero();
-	E_tag_rend.resize(6, 2 * mpEs.size());
-	composit_edges_colors(mV_tag, mpEs, E_tag_rend);
-
-	composit_edges_centernodes_triangles(F_tag, mV_tag, E_tag_rend, mV_tag_rend, F_tag_rend);
-
 	//statistics
 	sta.hex_ratio = Float(hex_num) / P_tag.size();
 	sta.hN = hex_num;
@@ -1202,26 +1049,17 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 			sta.polyhedral_ratios.push_back(Float(H_type[i]) / sta.pN);
 		}
 	}
-
 	//output
 	PF_flag.clear();
 	//std::cout << "start orient directions..." << endl;
 	orient_hybrid_mesh(mV_tag, F_tag, P_tag, PF_flag);
-	char path[1024], path_[1024];
-	strcpy(path_, outpath.c_str());
-	strncpy(path_, outpath.c_str(), sizeof(path_));
-	path_[sizeof(path_) - 1] = 0;
 
-	//sprintf(path, "%s", "C:/xgao/hex_meshing/code2/robust_instant_meshing/datasets/out_surface_.obj");
-	//write_surface_mesh_OBJ(mV_tag, F_tag, path);
-	//std::cout << "output data..." << endl;
-	//sprintf(path, "%s%s", path_, "_out.HYBRID");
-	//write_volume_mesh_HYBRID(mV_tag, F_tag, P_tag, Hex_flag, PF_flag, path);
-	//sprintf(path, "%s%s", path_, "_out.txt");
-	//write_statistics_TXT(sta, path);
+	E_final_rend.setZero();
+	E_final_rend.resize(6, 2 * mpEs.size());
+	composit_edges_colors(mV_tag, mpEs, E_final_rend);
+	composit_edges_centernodes_triangles(F_tag, mV_tag, E_final_rend, mV_final_rend, F_final_rend);
 
-	total_time = timer.value();
-	cout << "topo_timing decomposition_time total_timing: " << topo_check_time <<" "<<decomposition_time << " " <<total_time << " " << (double)topo_check_time / (double)total_time << endl;
+	cout << "done with extraction!" << endl;
 }
 
 bool MultiResolutionHierarchy::edge_tagging3D(vector<uint32_t> &ledges) {

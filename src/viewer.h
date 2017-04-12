@@ -77,7 +77,13 @@ protected:
 	std::vector<std::pair<int, std::string>> mExampleImages;
 	std::string mFilename;
 
-
+	enum Config_Layers {
+		Alignment = 0,
+		Extrinsic,
+		Randomization,
+		Hierarchy,
+		Config_LayerCount
+	};
     enum Layers {
         Tetrahedra = 0,
         OrientationField,
@@ -86,11 +92,6 @@ protected:
         PositionSingularities,
         Boundary,
         BoundaryWireframe,
-        FaceLabels,
-		Face_afterLabels,
-        VertexLabels,
-        ExtractionResult,
-        ExtractionResult2,
         LayerCount
     };
 	enum Extraction_Condition {
@@ -113,39 +114,15 @@ protected:
     Button *mSolveOrientationBtn;
     Button *mSolvePositionBtn;
 	Button *mEdgeTaggingBtn;
-	CheckBox *mReColorBox;
-	CheckBox *mQuadricBox;
-	CheckBox *mSplitBox;
-	CheckBox *mDoubletsBox;
-	CheckBox *mTrianglesBox;
-	CheckBox *mDecomposeBox;
-	CheckBox *mExtractLayers[ExtractLayerCount];
+	CheckBox *Configlayers[Config_LayerCount];
     Button *mExtractBtn;
     CheckBox *mLayers[LayerCount];
-    CheckBox *mAlignmentBox;
-    CheckBox *mExtrinsicBox;
-    CheckBox *mRandomizationBox;
-    CheckBox *mHierarchyBox;
-    IntBox<uint32_t> *mIterationBox;
-	FloatBox<Float> *mtElenRatioBox;
 	FloatBox<Float> *mScaleBox;
-	IntBox<uint32_t> *mJumpBox;
-    Button *mJumpButton;
 
-	/*For Debugging*/
 	bool mEdgeTagging_done;
-	IntBox<int32_t> *mFaceIdBox;
-	IntBox<int32_t> *mFace_afterIdBox;
-	IntBox<int32_t> *mVertexIdBox;
-	CheckBox *mMorph2Box;
 	Button *mOutputBtn;
-
-	CheckBox *mShow_F_local;
-		CheckBox *mShow_E_tagging;
-		CheckBox *mShow_E_degeneracy;
-		CheckBox *mShow_E_triangle;
 	CheckBox *mShow_F_done;
-		CheckBox *mShow_E_done;
+	CheckBox *mShow_E_done;
 
 
     /* Visualization */

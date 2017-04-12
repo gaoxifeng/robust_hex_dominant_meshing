@@ -5,12 +5,8 @@
 #include <nanogui/serializer/opengl.h>
 
 Viewer::Viewer(std::string &filename, bool fullscreen)
-    : Screen(Vector2i(1280, 960), "Instant Hex-Dominant Meshes", true),
+    : Screen(Vector2i(1280, 960), "Robust Quad/Hex-dominant Meshes", true),
       mOptimizer(nullptr) {
-
-    /* Load the input mesh */
-	if (!filename.empty())
-		;// mRes.load(filename);
 
     mOptimizer = new Optimizer(mRes);
 
@@ -111,13 +107,12 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		mExampleImages = nanogui::loadImageDirectory(ctx, "resources");
 	}
 	catch (const std::runtime_error &e) {
-		cout << "Unable to load image data: " << e.what() << endl;
 	}
 	mExampleImages.insert(mExampleImages.begin(),
 		std::make_pair(nvgImageIcon(ctx, loadmesh), ""));
 
 	/* Initialize user interface */
-    Window *window = new Window(this, "Instant 2D/3D Meshes");
+    Window *window = new Window(this, "");
     window->setPosition(Vector2i(15, 15));
     window->setLayout(new GroupLayout());
 
@@ -138,15 +133,11 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 
 		if (filename2.empty()) {
 			filename2 = nanogui::file_dialog({
-				{ "obj", "Wavefront OBJ" },
-				{ "vtk", "Visualization Toolkit VTk" },
-				{ "HYBRID", "general polyhedral mesh" }
+				{ "obj", "Wavefront OBJ" }
 			}, false);
 			if (filename2 == "")
 				return;
 		}
-		else if (extension != ".ply" && extension != ".obj" && extension != ".aln")
-			;// filename2 = filename2 + ".ply";
 
 		mRes.load(filename2);
 		filename = filename2;
@@ -183,11 +174,24 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		mTranslate = false;
 	}
 
-    PopupButton *openBtn = new PopupButton(window, "Layers");
+//Config Layers
+	PopupButton *openBtn3 = new PopupButton(window, "Config Layers");
+	auto popup3 = openBtn3->popup();
+	popup3->setLayout(new GroupLayout());
+	Configlayers[Config_Layers::Alignment] = new CheckBox(popup3, "Boundary alignment");
+	Configlayers[Config_Layers::Extrinsic] = new CheckBox(popup3, "Extrinsic smoothing");
+	Configlayers[Config_Layers::Randomization] = new CheckBox(popup3, "Randomization");
+	Configlayers[Config_Layers::Hierarchy] = new CheckBox(popup3, "Hierarchy");
+	int ctr = 0;
+	for (auto l : Configlayers) {
+		l->setChecked(true);
+		l->setId("configlayer." + std::to_string(ctr++));
+	}
+//Render Layers
+    PopupButton *openBtn = new PopupButton(window, "Render Layers");
     auto popup = openBtn->popup();
     popup->setLayout(new GroupLayout());
 
-    new Label(popup, "Render layers", "sans-bold");
     mLayers[Layers::Tetrahedra]               = new CheckBox(popup, "Tetrahedra");
     mLayers[Layers::OrientationField]         = new CheckBox(popup, "Orientation field");
     mLayers[Layers::OrientationSingularities] = new CheckBox(popup, "Orientation singularities");
@@ -195,45 +199,13 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
     mLayers[Layers::PositionSingularities]    = new CheckBox(popup, "Position singularities");
     mLayers[Layers::Boundary]                 = new CheckBox(popup, "Boundary");
     mLayers[Layers::BoundaryWireframe]        = new CheckBox(popup, "Boundary wireframe");
-    mLayers[Layers::FaceLabels]               = new CheckBox(popup, "Face Labels");
-	mLayers[Layers::Face_afterLabels]		  = new CheckBox(popup, "ExtractedFace Labels");
-    mLayers[Layers::VertexLabels]             = new CheckBox(popup, "Vertex Labels");
-    mLayers[Layers::ExtractionResult]         = new CheckBox(popup, "Extraction result (colors)");
-    mLayers[Layers::ExtractionResult2]        = new CheckBox(popup, "Extraction result (faces)");
 
-    int ctr = 0;
+    ctr = 0;
     for (auto l : mLayers) {
         l->setChecked(false);
         l->setId("layer." + std::to_string(ctr++));
     }
-    //mLayers[Layers::Boundary]->setChecked(true);
-    //mLayers[Layers::PositionField]->setChecked(true);
-
-    new Label(window, "Flags", "sans-bold");
-
-    mAlignmentBox = new CheckBox(window, "Boundary alignment");
-    mAlignmentBox->setChecked(mOptimizer->alignment());
-    mAlignmentBox->setId("alignment");
-
-    mExtrinsicBox = new CheckBox(window, "Extrinsic smoothing");
-    mExtrinsicBox->setChecked(mOptimizer->extrinsic());
-    mExtrinsicBox->setId("extrinsic");
-    mExtrinsicBox->setEnabled(!mRes.tetMesh());
-
-    mRandomizationBox = new CheckBox(window, "Randomization");
-    mRandomizationBox->setChecked(mOptimizer->randomization());
-    mRandomizationBox->setId("randomization");
-    mHierarchyBox = new CheckBox(window, "Hierarchy");
-    mHierarchyBox->setChecked(mOptimizer->hierarchy());
-    mHierarchyBox->setId("hierarchy");
-
-	new Label(window, "Tet edge-len", "sans-bold");
-	mtElenRatioBox = new FloatBox<Float>(window);
-	mtElenRatioBox->setValue(mRes.tet_elen_ratio());
-	mtElenRatioBox->setEditable(true);
-	mtElenRatioBox->setAlignment(TextBox::Alignment::Right);
-	mtElenRatioBox->setId("tElen_ratio");
-
+//Parameters
 	mTmeshingBtn = new Button(window, "Tet-meshing", ENTYPO_ICON_FLASH);
 	mTmeshingBtn->setBackgroundColor(Color(0, 0, 255, 25));
 	mTmeshingBtn->setFlags(Button::Flags::ToggleButton);
@@ -248,14 +220,7 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 	mScaleBox->setAlignment(TextBox::Alignment::Right);
 	mScaleBox->setId("outputscale");
 
-    new Label(window, "Iterations per level", "sans-bold");
-    mIterationBox = new IntBox<uint32_t>(window);
-    mIterationBox->setValue(mOptimizer->maxIterations());
-    mIterationBox->setEditable(true);
-    mIterationBox->setAlignment(TextBox::Alignment::Right);
-    mIterationBox->setId("iterations");
-
-	
+//build structure	
 	mSolveDatastructureBtn = new Button(window, "Build-Structure", ENTYPO_ICON_FLASH);
 	mSolveDatastructureBtn->setBackgroundColor(Color(0, 0, 255, 25));
 	mSolveDatastructureBtn->setFlags(Button::Flags::ToggleButton);
@@ -293,7 +258,7 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		mLayers[Layers::PositionField]->setChecked(true);
 	});
 	
-
+//Rosy
     mSolveOrientationBtn = new Button(window, "Rosy", ENTYPO_ICON_FLASH);
     mSolveOrientationBtn->setBackgroundColor(Color(0, 0, 255, 25));
     mSolveOrientationBtn->setFlags(Button::Flags::ToggleButton);
@@ -308,15 +273,12 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
         if (value == false)
             updateOrientationSingularities();
     });
-
-    mSolvePositionBtn = new Button(window, "Posy", ENTYPO_ICON_FLASH);
+//Posy
+	mSolvePositionBtn = new Button(window, "Posy", ENTYPO_ICON_FLASH);
     mSolvePositionBtn->setBackgroundColor(Color(0, 0, 255, 25));
     mSolvePositionBtn->setFlags(Button::Flags::ToggleButton);
     mSolvePositionBtn->setChangeCallback([&](bool value) {
-        if (mRes.combed()) {
-            mHierarchyBox->setChecked(false);
-            mOptimizer->setHierarchy(false);
-        }
+
         mOptimizer->setOptimizePositions(value);
         mOptimizer->notify();
 
@@ -328,8 +290,14 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
             updatePositionSingularities();
     });
 
+	PopupButton *MorphingBtn = new PopupButton(window, "Morphing");
+	Popup *morphPopup = MorphingBtn->popup();
+	morphPopup->setAnchorHeight(61);
+
+	morphPopup->setLayout(new GroupLayout());
+
 	mEdgeTagging_done = false;
-	mEdgeTaggingBtn = new Button(window, "Coloring", ENTYPO_ICON_FLASH);
+	mEdgeTaggingBtn = new Button(morphPopup, "Coloring", ENTYPO_ICON_FLASH);
 	mEdgeTaggingBtn->setBackgroundColor(Color(0, 0, 255, 25));
 	mEdgeTaggingBtn->setFlags(Button::Flags::ToggleButton);
 	mEdgeTaggingBtn->setChangeCallback([&](bool value) {
@@ -338,7 +306,6 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		else
 		{
 			mRes.init_edge_tagging3D();
-			//mRes.projectBack3D2();
 		}
 		mEdgeTagging_done = true;
 		auto const &R = mRes.E_rend;
@@ -346,8 +313,7 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		mExtractionResultShader.uploadAttrib("position", MatrixXf(R.block(0, 0, 3, R.cols())));
 		mExtractionResultShader.uploadAttrib("color", MatrixXf(R.block(3, 0, 3, R.cols())));
 	});
-	new Label(window, "Morphing", "sans-bold");
-	Slider *slider2 = new Slider(window);
+	Slider *slider2 = new Slider(morphPopup);
 	slider2->setValue(0.0);
 	auto cb = [&](Float value) {
 		mRes.E_I_rend = (1 - value) * mRes.E_rend + value*mRes.E_O_rend;
@@ -355,113 +321,44 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 	cb(0.0f);
 	slider2->setCallback(cb);
 	slider2->setId("slider2");
-
-	Slider *slider_morph2 = new Slider(window);
-	slider_morph2->setValue(0.0);
-	auto cb_morph2 = [&](Float value) {
-		mRes.E_I_rend_o = (1 - value) * mRes.E_rend_o + value*mRes.E_O_rend_o;
-	};
-	cb_morph2(0.0f);
-	slider_morph2->setCallback(cb_morph2);
-	slider_morph2->setId("slider_morph2");
-
-	PopupButton *openBtn2 = new PopupButton(window, "Extractionlayers");
-	auto popup2 = openBtn2->popup();
-	popup2->setLayout(new GroupLayout());
-	new Label(popup2, "Extractionlayers", "sans-bold");
-	mExtractLayers[Extraction_Condition::ReColor] = new CheckBox(popup2, "ReColor");
-	mExtractLayers[Extraction_Condition::Quadric] = new CheckBox(popup2, "Quadric");
-	mExtractLayers[Extraction_Condition::Splitting] = new CheckBox(popup2, "Splitting");
-	mExtractLayers[Extraction_Condition::Triangles] = new CheckBox(popup2, "Triangles");
-	mExtractLayers[Extraction_Condition::Doublets] = new CheckBox(popup2, "Doublets");
-	mExtractLayers[Extraction_Condition::Decompose] = new CheckBox(popup2, "Decompose");
-
-	int ctr2 = 0;
-	for (auto l : mExtractLayers) {
-		l->setChecked(true);
-		l->setId("layer." + std::to_string(ctr2++));
-	}
-	mExtractLayers[Extraction_Condition::Quadric]->setChecked(false);
-
-	//mReColorBox = new CheckBox(window, "ReColor");
-	//mReColorBox->setChecked(false);
-	//mReColorBox->setId("ReColor");
-
-	//mQuadricBox = new CheckBox(window, "Quadric");
-	//mQuadricBox->setChecked(false);
-	//mQuadricBox->setId("Quadric");
-
-	//mSplitBox = new CheckBox(window, "splitting");
-	//mSplitBox->setChecked(false);
-	//mSplitBox->setId("splitting");
-
-	//mTrianglesBox = new CheckBox(window, "Triangles");
-	//mTrianglesBox->setChecked(false);
-	//mTrianglesBox->setId("Triangles");
-
-	//mDoubletsBox = new CheckBox(window, "Doublets");
-	//mDoubletsBox->setChecked(false);
-	//mDoubletsBox->setId("Doublets");
-	//
-	//mDecomposeBox = new CheckBox(window, "Decompose");
-	//mDecomposeBox->setChecked(false);
-	//mDecomposeBox->setId("Decompose");
-	
-	
+//Extraction
     mExtractBtn = new Button(window, "Extract", ENTYPO_ICON_FLASH);
     mExtractBtn->setBackgroundColor(Color(0, 255, 0, 25));
     mExtractBtn->setCallback([&]() {
 		if (!mRes.tetMesh()) {
-			//mRes.extractTri();
-			if (mRes.global_parameterization) mRes.meshExtraction2D_global();
-			else  mRes.meshExtraction2D();
 
-			mExtractionResultShader_F_done.bind();
-			mExtractionResultShader_F_done.uploadAttrib("position", mRes.mV_final_rend);
-			mExtractionResultShader_F_done.uploadIndices(mRes.F_final_rend);
-			mShow_F_done->setChecked(true);
+			mRes.re_color = true;
+			mRes.doublets = true;
+			mRes.splitting = true;
+			mRes.triangles = true;
+			mRes.decomposes = true;
 
-			auto const &R4 = mRes.E_final_rend;
-			mExtractionResultShader_E_done.bind();
-			mExtractionResultShader_E_done.uploadAttrib("position", MatrixXf(R4.block(0, 0, 3, R4.cols())));
-			mExtractionResultShader_E_done.uploadAttrib("color", MatrixXf(R4.block(3, 0, 3, R4.cols())));
-			mShow_E_done->setChecked(true);
-
-			auto const &R2 = mRes.E_tag_rend;
-			mExtractionResultShader_E_tagging.bind();
-			mExtractionResultShader_E_tagging.uploadAttrib("position", MatrixXf(R2.block(0, 0, 3, R2.cols())));
-			mExtractionResultShader_E_tagging.uploadAttrib("color", MatrixXf(R2.block(3, 0, 3, R2.cols())));
-			//mShow_E_tagging->setChecked(true);
-
-			mLayers[PositionSingularities]->setChecked(false);
-			mLayers[Layers::PositionField]->setChecked(false);
-			mLayers[Layers::Boundary]->setChecked(false);
+			mRes.meshExtraction2D();
 		}
-		else
-		{
-			//mRes.extractTet();
+		else{
+			mRes.re_color = true;
+			mRes.splitting = true;
+			mRes.doublets = false;
+			mRes.triangles = false;
+			mRes.decomposes = false;
 			mRes.meshExtraction3D();
-
-			auto const &R2 = mRes.E_tag_rend;
-			mExtractionResultShader_E_tagging.bind();
-			mExtractionResultShader_E_tagging.uploadAttrib("position", MatrixXf(R2.block(0, 0, 3, R2.cols())));
-			mExtractionResultShader_E_tagging.uploadAttrib("color", MatrixXf(R2.block(3, 0, 3, R2.cols())));
-			mShow_E_tagging->setChecked(true);
 		}
+		mLayers[PositionSingularities]->setChecked(false);
+		mLayers[Layers::PositionField]->setChecked(false);
+		mLayers[Layers::Boundary]->setChecked(false);
+		mLayers[OrientationSingularities]->setChecked(false);
+		mLayers[Layers::OrientationField]->setChecked(false);
 
-		mExtractionResultShader_F_done_local.bind();
-		mExtractionResultShader_F_done_local.uploadAttrib("position", mRes.mV_tag_rend);
-		mExtractionResultShader_F_done_local.uploadIndices(mRes.F_tag_rend);
-		//mShow_F_local->setChecked(true);
+		mExtractionResultShader_F_done.bind();
+		mExtractionResultShader_F_done.uploadAttrib("position", mRes.mV_final_rend);
+		mExtractionResultShader_F_done.uploadIndices(mRes.F_final_rend);
+		mShow_F_done->setChecked(true);
 
-
-
-		//auto const &R3 = mRes.E_tag_left_rend;
-		//mExtractionResultShader_E_degeneracy.bind();
-		//mExtractionResultShader_E_degeneracy.uploadAttrib("position", MatrixXf(R3.block(0, 0, 3, R3.cols())));
-		//mExtractionResultShader_E_degeneracy.uploadAttrib("color", MatrixXf(R3.block(3, 0, 3, R3.cols())));
-		//mShow_E_degeneracy->setChecked(true);
-
+		auto const &R4 = mRes.E_final_rend;
+		mExtractionResultShader_E_done.bind();
+		mExtractionResultShader_E_done.uploadAttrib("position", MatrixXf(R4.block(0, 0, 3, R4.cols())));
+		mExtractionResultShader_E_done.uploadAttrib("color", MatrixXf(R4.block(3, 0, 3, R4.cols())));
+		mShow_E_done->setChecked(true);
 	});
 
     new Label(window, "Slicing plane", "sans-bold");
@@ -475,101 +372,38 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
     cb2(0.0f);
     slider->setCallback(cb2);
     slider->setId("slider1");
+//output
+	PopupButton *ConstraintsBtn = new PopupButton(window, "Output");
+	ConstraintsBtn->setIcon(ENTYPO_ICON_ROCKET);
+	ConstraintsBtn->setBackgroundColor(Color(100, 0, 0, 25));
+	Popup *ConstraintsPopup = ConstraintsBtn->popup();
+	ConstraintsPopup->setAnchorHeight(61);
 
-    Widget *panel = new Widget(window);
-    panel->setLayout(new BoxLayout(Orientation::Horizontal, Alignment::Middle, 0, 10));
+	ConstraintsPopup->setLayout(new GroupLayout());
 
-    mJumpBox = new IntBox<uint32_t>(panel);
-    mJumpButton = new Button(panel, "Go");
-    mJumpBox->setEditable(true);
-    mJumpBox->setFixedWidth(90);
-
-    mJumpButton->setCallback([&]{
-        uint32_t v = mJumpBox->value();
-        if (v >= mRes.V().cols())
-            return;
-        Vector4f p, n;
-        p << mRes.V().col(v), 1.f;
-        n << mRes.N().col(v), 0.f;
-
-        Vector3f shift = -mCamera.modelTranslation - p.head<3>();
-        mCamera.modelTranslation += shift;
-
-        Eigen::Matrix4f model, view, proj;
-        computeCameraMatrices(model, view, proj);
-
-        mCamera.eye = (model * n).head<3>().normalized() * 5;
-        mLightPosition = mCamera.eye + Vector3f::UnitX();
-    });
-
-    performLayout();
-
-
-	Window *window_debug = new Window(this, "Debug Window");
-	window_debug ->setPosition(Vector2i(210, 400));
-	window_debug ->setLayout(new GroupLayout());
-
-	new Label(window_debug, "Face Id", "sans-bold");
-	mFaceIdBox = new IntBox<int32_t>(window_debug);
-	mFaceIdBox->setValue(-1);
-	mFaceIdBox->setEditable(true);
-	mFaceIdBox->setAlignment(TextBox::Alignment::Right);
-	mFaceIdBox->setId("faceid");
-
-	new Label(window_debug, "Vertex Id", "sans-bold");
-	mVertexIdBox = new IntBox<int32_t>(window_debug);
-	mVertexIdBox->setValue(-1);
-	mVertexIdBox->setEditable(true);
-	mVertexIdBox->setAlignment(TextBox::Alignment::Right);
-	mVertexIdBox->setId("vertexid");
-
-
-	mMorph2Box = new CheckBox(window_debug, "edge-color-o");
-	mMorph2Box->setChecked(false);
-	mMorph2Box->setId("Morph_edge2");
-
-	new Label(window_debug, "Edit tagging", "sans-bold");
-
-	mShow_F_local = new CheckBox(window_debug, "Show_F_local");
-	mShow_F_local->setId("showdonelocalF");
-		mShow_E_tagging = new CheckBox(window_debug, "Show_E_tagging");
-		mShow_E_tagging->setId("showdonetagging");
-		mShow_E_degeneracy = new CheckBox(window_debug, "Show_E_degeneracy");
-		mShow_E_degeneracy->setId("showdonedegeneracy");
-		mShow_E_triangle = new CheckBox(window_debug, "Show_E_triangle");
-		mShow_E_triangle->setId("showdonetriangle");
-
-	new Label(window_debug, "Final", "sans-bold");
-	mShow_F_done = new CheckBox(window_debug, "Show_F_done");
+	mShow_F_done = new CheckBox(ConstraintsPopup, "Face");
 	mShow_F_done->setId("showdoneF");
-		mShow_E_done = new CheckBox(window_debug, "Show_E_done");
-		mShow_E_done->setId("showdoneE");
+	mShow_F_done->setChecked(false);
+	mShow_E_done = new CheckBox(ConstraintsPopup, "Edge");
+	mShow_E_done->setId("showdoneE");
+	mShow_E_done->setChecked(false);
 
-	new Label(window, "Output", "sans-bold");
-	mOutputBtn = new Button(window_debug, "Output", ENTYPO_ICON_FLASH);
+
+	mOutputBtn = new Button(ConstraintsPopup, "Output", ENTYPO_ICON_FLASH);
 	mOutputBtn->setBackgroundColor(Color(0, 255, 0, 25));
 	mOutputBtn->setCallback([&]() {
 		char patho[300];
 		if (!mRes.tetMesh()) {
-			//sprintf(patho, "%s%s", filename.c_str(), "_surout.vtk");
-			//write_surface_mesh_VTK(mRes.mV_tag, mRes.F_tag, patho);
-			//write_surface_mesh_VTK(mRes.mV_final, mRes.mF_done_triangle, "../datasets/out_done_triangle.vtk");
 			sprintf(patho, "%s%s", filename.c_str(), "_surout.obj");
 			write_surface_mesh_OBJ(mRes.mV_tag, mRes.F_tag, patho);
-
-			sprintf(patho, "%s%s", filename.c_str(), "_V_flag.txt");
-			write_Vertex_Types_TXT(mRes.V_flag, patho);
 		}
-		else{
-			sprintf(patho, "%s%s", filename.c_str(), "_volout.obj");
-			write_surface_mesh_OBJ(mRes.mV_tag, mRes.F_tag, patho);
-			sprintf(patho, "%s%s", filename.c_str(), "_volout.vtk");
-			write_volume_mesh_VTK(mRes.mV_tag, mRes.Es_reddash_left, mRes.F_tag, mRes.F_tag_type, patho);
-			//write_volume_mesh_MESH(mPVs, mRes.F_final, "../datasets/out_done_tagging_vol.mesh");
+		else {
+			sprintf(patho, "%s%s", filename.c_str(), ".HYBRID");
+			write_volume_mesh_HYBRID(mRes.mV_tag, mRes.F_tag, mRes.P_tag, mRes.Hex_flag, mRes.PF_flag, patho);
 		}
 	});
-
-	performLayout();
+//layout
+    performLayout();
 }
 
 Viewer::~Viewer() {
@@ -671,19 +505,11 @@ void Viewer::drawContents() {
 	glClearColor(.5, .5, .5, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    mOptimizer->setAlignment(mAlignmentBox->checked());
-    mOptimizer->setRandomization(mRandomizationBox->checked());
-    mOptimizer->setHierarchy(mHierarchyBox->checked());
-    mOptimizer->setMaxIterations(mIterationBox->value());
-	mRes.setScale(mScaleBox->value());
-	mRes.set_tet_elen_ratio(mtElenRatioBox->value());
+	mOptimizer->setAlignment(Configlayers[Config_Layers::Alignment]->checked());
+	mOptimizer->setRandomization(Configlayers[Config_Layers::Randomization]->checked());
+	mOptimizer->setHierarchy(Configlayers[Config_Layers::Hierarchy]->checked());
 
-	mRes.re_color = mExtractLayers[Extraction_Condition::ReColor]->checked();
-	mRes.Qquadric = mExtractLayers[Extraction_Condition::Quadric]->checked();
-	mRes.doublets = mExtractLayers[Extraction_Condition::Doublets]->checked();
-	mRes.splitting = mExtractLayers[Extraction_Condition::Splitting]->checked();
-	mRes.triangles= mExtractLayers[Extraction_Condition::Triangles]->checked();
-	mRes.decomposes = mExtractLayers[Extraction_Condition::Decompose]->checked();
+	mRes.setScale(mScaleBox->value());
 
 	if (!mOptimizer->active()) {
         if (mSolveOrientationBtn->pushed()) {
@@ -703,9 +529,6 @@ void Viewer::drawContents() {
 	}
 	if (mSolveDatastructureBtn->pushed()) {
 		mSolveDatastructureBtn->setPushed(false);
-	}
-	if (mEdgeTaggingBtn->pushed()) {
-		mEdgeTaggingBtn->setPushed(false);
 	}
     Eigen::Matrix4f model, view, proj;
     computeCameraMatrices(model, view, proj);
@@ -730,12 +553,6 @@ void Viewer::drawContents() {
 		mExtractionResultShader2.uploadAttrib("position", MatrixXf(mRes.E_I_rend.block(0, 0, 3, mRes.E_I_rend.cols())));
 		mExtractionResultShader2.uploadAttrib("color", MatrixXf(mRes.E_I_rend.block(3, 0, 3, mRes.E_I_rend.cols())));
 	}
-	if (mMorph2Box->checked()) {
-		mEdge_color_morph2.bind();
-		mEdge_color_morph2.uploadAttrib("position", MatrixXf(mRes.E_I_rend_o.block(0, 0, 3, mRes.E_I_rend_o.cols())));
-		mEdge_color_morph2.uploadAttrib("color", MatrixXf(mRes.E_I_rend_o.block(3, 0, 3, mRes.E_I_rend_o.cols())));
-	}
-
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -834,65 +651,20 @@ void Viewer::drawContents() {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    if (mLayers[ExtractionResult]->checked()) {
-        auto &shader = mExtractionResultShader;
-        shader.bind();
-        shader.setUniform("split", mSplit, false);
-        shader.setUniform("mvp", mvp);
-		shader.drawArray(GL_LINES, 0, mRes.E_rend.cols());
-	}
-	if (mLayers[ExtractionResult2]->checked()) {
-		auto &shader = mExtractionResultShader2;
-		shader.bind();
-		shader.setUniform("split", mSplit, false);
-		shader.setUniform("mvp", mvp);
-		shader.drawArray(GL_LINES, 0, mRes.E_I_rend.cols());
-	}
-	if (mMorph2Box->checked()) {
-		auto &shader = mEdge_color_morph2;
-		shader.bind();
-		shader.setUniform("split", mSplit, false);
-		shader.setUniform("mvp", mvp);
-		shader.drawArray(GL_LINES, 0, mRes.E_I_rend_o.cols());
-	}	
-
-	if (mShow_F_local->checked()) {
-		mExtractionResultShader_F_done_local.bind();
-		mExtractionResultShader_F_done_local.setUniform("light_position", mLightPosition);
-		mExtractionResultShader_F_done_local.setUniform("model", model);
-		mExtractionResultShader_F_done_local.setUniform("view", view);
-		mExtractionResultShader_F_done_local.setUniform("proj", proj);
-		mExtractionResultShader_F_done_local.setUniform("base_color", mBaseColorBoundary);
-		//mExtractionResultShader_F.setUniform("specular_color", mSpecularColorBoundary);
-		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(1.0, 1.0);
-		mExtractionResultShader_F_done_local.drawIndexed(GL_TRIANGLES, 0, mRes.F_tag_rend.cols());
-		glDisable(GL_POLYGON_OFFSET_FILL);
-	}
-	if (mShow_E_tagging->checked())
-	{
-		auto &shader = mExtractionResultShader_E_tagging;
-		shader.bind();
-		shader.setUniform("split", mSplit, false);
-		shader.setUniform("mvp", mvp);
-		shader.drawArray(GL_LINES, 0, mRes.E_tag_rend.cols());
-	}
-	if (mShow_E_degeneracy->checked())
-	{
-		auto &shader = mExtractionResultShader_E_degeneracy;
-		shader.bind();
-		shader.setUniform("split", mSplit, false);
-		shader.setUniform("mvp", mvp);
-		shader.drawArray(GL_LINES, 0, mRes.E_tag_left_rend.cols());
-	}
-	if (mShow_E_triangle->checked())
-	{
-		auto &shader = mExtractionResultShader_E_triangle;
-		shader.bind();
-		shader.setUniform("split", mSplit, false);
-		shader.setUniform("mvp", mvp);
-		shader.drawArray(GL_LINES, 0, mRes.E_tag_rend.cols());
-	}
+ //   if (mLayers[ExtractionResult]->checked()) {
+ //       auto &shader = mExtractionResultShader;
+ //       shader.bind();
+ //       shader.setUniform("split", mSplit, false);
+ //       shader.setUniform("mvp", mvp);
+	//	shader.drawArray(GL_LINES, 0, mRes.E_rend.cols());
+	//}
+	//if (mLayers[ExtractionResult2]->checked()) {
+	//	auto &shader = mExtractionResultShader2;
+	//	shader.bind();
+	//	shader.setUniform("split", mSplit, false);
+	//	shader.setUniform("mvp", mvp);
+	//	shader.drawArray(GL_LINES, 0, mRes.E_I_rend.cols());
+	//}
 
 	if (mShow_F_done->checked()) {
 		mExtractionResultShader_F_done.bind();
@@ -901,7 +673,6 @@ void Viewer::drawContents() {
 		mExtractionResultShader_F_done.setUniform("view", view);
 		mExtractionResultShader_F_done.setUniform("proj", proj);
 		mExtractionResultShader_F_done.setUniform("base_color", mBaseColorBoundary);
-		//mExtractionResultShader_F.setUniform("specular_color", mSpecularColorBoundary);
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		glPolygonOffset(1.0, 1.0);
 		mExtractionResultShader_F_done.drawIndexed(GL_TRIANGLES, 0, mRes.F_final_rend.cols() * 3);
@@ -915,108 +686,6 @@ void Viewer::drawContents() {
 		shader.setUniform("mvp", mvp);
 		shader.drawArray(GL_LINES, 0, mRes.E_final_rend.cols());
 	}
-
-	if (mLayers[VertexLabels]->checked()) {
-		nvgBeginFrame(mNVGContext, mSize[0], mSize[1], mPixelRatio);
-		nvgFontSize(mNVGContext, 14.0f);
-		nvgFontFace(mNVGContext, "sans-bold");
-		nvgTextAlign(mNVGContext, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-		//const MatrixXf &V = mRes.V();
-		const MatrixXf &V = mRes.mV_tag;
-		nvgFillColor(mNVGContext, Color(255, 200, 200, 200));
-
-		for (uint32_t i = 0; i<V.cols(); ++i) {
-
-			if (mVertexIdBox->value() != -1 && i != mVertexIdBox->value())
-				continue;
-
-			Vector4f pos;
-			pos << V.col(i).cast<float>(), 1.0f;
-
-			if (pos.dot(mSplit) < 0)
-				continue;
-
-			Eigen::Vector3f coord = project(Vector3f((model * pos).head<3>()), view, proj, mSize);
-			if (coord.x() < -50 || coord.x() > mSize[0] + 50 || coord.y() < -50 || coord.y() > mSize[1] + 50 || coord.z() > 1)
-				continue;
-			Vector3f ray_origin = pos.head<3>();// +n * pos.cwiseAbs().maxCoeff() * 1e-4f;
-			//if (!mRes.bvh()->rayIntersect(Ray(ray_origin, civ.head<3>() - ray_origin, 0.0f, 1.1f)))
-				nvgText(mNVGContext, coord.x(), mSize[1] - coord.y(), std::to_string(i).c_str(), nullptr);
-
-		}
-		nvgEndFrame(mNVGContext);
-	}
-
-    if (mLayers[FaceLabels]->checked()) {
-        nvgBeginFrame(mNVGContext, mSize[0], mSize[1], mPixelRatio);
-        nvgFontSize(mNVGContext, 14.0f);
-        nvgFontFace(mNVGContext, "sans-bold");
-        nvgTextAlign(mNVGContext, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-        const MatrixXf &V = mRes.V();
-        nvgFillColor(mNVGContext, Color(200, 200, 255, 200));
-
-        auto const &F = mRes.F();
-
-        for (uint32_t i=0; i<F.cols(); ++i) {
-			if (mFaceIdBox->value() != -1 && i != mFaceIdBox->value())
-				continue;
-            Vector3f v0 = V.col(F(0, i)), v1 = V.col(F(1, i)),
-                     v2 = V.col(F(2, i));
-            Vector4f pos;
-            pos << (1.0f / 3.0f) * (v0+v1+v2).cast<float>(), 1.0f;
-
-            Vector3f n = (v1-v0).cross(v2-v0).normalized();
-            if (pos.dot(mSplit) < 0)
-                continue;
-
-            Eigen::Vector3f coord = project(Vector3f((model * pos).head<3>()), view, proj, mSize);
-            if (coord.x() < -50 || coord.x() > mSize[0] + 50 || coord.y() < -50 || coord.y() > mSize[1] + 50 || coord.z() > 1)
-                continue;
-            Vector3f ray_origin = pos.head<3>() + n * pos.cwiseAbs().maxCoeff() * 1e-4f;
-            if (!mRes.bvh()->rayIntersect(Ray(ray_origin, civ.head<3>() - ray_origin, 0.0f, 1.1f)))
-                nvgText(mNVGContext, coord.x(), mSize[1] - coord.y(), std::to_string(i).c_str(), nullptr);
-
-        }
-        nvgEndFrame(mNVGContext);
-    }
-	if (mLayers[Face_afterLabels]->checked()) {
-		nvgBeginFrame(mNVGContext, mSize[0], mSize[1], mPixelRatio);
-		nvgFontSize(mNVGContext, 14.0f);
-		nvgFontFace(mNVGContext, "sans-bold");
-		nvgTextAlign(mNVGContext, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-		const MatrixXf &V = mRes.V();
-		nvgFillColor(mNVGContext, Color(200, 200, 255, 200));
-
-		auto const &F = mRes.F_tag;
-
-		for (uint32_t i = 0; i<F.size(); ++i) {
-			if (mFaceIdBox->value() != -1 && i != mFaceIdBox->value())
-				continue;
-			Vector3f v, v0, v1, v2; v.setZero();
-			for (auto vid : F[i]) v += mRes.mV_tag.col(vid);
-			v /= F[i].size();
-			Vector4f pos;
-			pos << v, 1.0f;
-
-			if (F[i].size() < 3) continue;
-			v0 = mRes.mV_tag.col(F[i][0]);
-			v1 = mRes.mV_tag.col(F[i][1]);
-			v2 = mRes.mV_tag.col(F[i][2]);
-
-			Vector3f n = (v1 - v0).cross(v2 - v0).normalized();
-			if (pos.dot(mSplit) < 0)
-				continue;
-
-			Eigen::Vector3f coord = project(Vector3f((model * pos).head<3>()), view, proj, mSize);
-			if (coord.x() < -50 || coord.x() > mSize[0] + 50 || coord.y() < -50 || coord.y() > mSize[1] + 50 || coord.z() > 1)
-				continue;
-			Vector3f ray_origin = pos.head<3>() + n * pos.cwiseAbs().maxCoeff() * 1e-4f;
-			if (!mRes.bvh()->rayIntersect(Ray(ray_origin, civ.head<3>() - ray_origin, 0.0f, 1.1f)))
-				nvgText(mNVGContext, coord.x(), mSize[1] - coord.y(), std::to_string(i).c_str(), nullptr);
-
-		}
-		nvgEndFrame(mNVGContext);
-	}	
 }
 
 bool Viewer::keyboardEvent(int key, int scancode, int action, int modifiers) {

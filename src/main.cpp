@@ -90,15 +90,6 @@ int main(int argc, char **argv) {
         cout << "Error: " << e.what() << endl;
         help = true;
     }
-
-    if (help || args.size() > 1) {
-        cout << "Syntax: " << argv[0] << " [options] <input mesh>" << endl;
-        cout << "Options:" << endl;
-        cout << "   -t, --threads <count>     Number of threads used for parallel computations" << endl;
-        cout << "   -F, --fullscreen          Open a full-screen window" << endl;
-        cout << "   -h, --help                Display this message" << endl;
-        return -1;
-    }
 	
 	nprocs = 1;
     tbb::task_scheduler_init init(nprocs == -1 ? tbb::task_scheduler_init::automatic : nprocs);
@@ -116,61 +107,13 @@ int main(int argc, char **argv) {
                 nanogui::chdir_to_bundle_parent();
         #endif
 
-        {
-				//std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/camel.obj";
-				//std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/bumpy_sphere.obj";
-				//std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/bunnyBotsch.obj";
-				//std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/dragonstand_recon100K.obj"; 
-				//std::string filename = "../datasets/inputmodels/inputmodels/dragonstand_recon100K.obj";
-				//std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/dancing_children100K.obj";
-				//	std::string filename = "../datasets/inputmodels/inputmodels/bozbezbozzel100K.obj";
-				//std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/botijo.obj";
-				//	std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/rolling_stage100K.obj";
-				//	std::string filename = "../datasets/inputmodels/inputmodels/mannequin_mc.obj";
-			//	std::string filename = "../datasets/mannequin_mc_out.obj";
-			//std::string filename = "../datasets/volume/sphereTETM";
-			//std::string filename = "../datasets/volume/in/bimba100KTETM"; 
-			//std::string filename = "../datasets/volume/in/cubeTETM";
-			//std::string filename = "../datasets/volume/PolyCube_data/rod/rod_input"; 
-			//std::string filename = "../datasets/volume/in/cupTETM";
-			//std::string filename = "../datasets/volume/in/bladeTETM"; 
-			//std::string filename = "../datasets/volume/in/armchairTETM"; 
-			//std::string filename = "../datasets/volume/sandia/macaroni_fineTETM"; 
-			//			std::string filename = "../datasets/volume/sandia/macaroni_fineTETM";
-					//				std::string filename = "../datasets/volume/sandia/notch_medTETM";
-					//std::string filename = "C:/xgao/hex_meshing/code/robust_instant_meshing/datasets/volume/in/cube_twist";
-							//std::string filename = "C:/xgao/hex_meshing/code/robust_instant_meshing/datasets/volume/in/fandiskTETMs"; 
-							std::string filename = "C:/xgao/hex_meshing/code/robust_instant_meshing/datasets/volume/in/fandiskTETM2";
-							//std::string filename = "C:/xgao/hex_meshing/code/robust_instant_meshing/datasets/volume/in/cube_smallTETM"; 
-						//			std::string filename = "../datasets/volume/in/fertility_triTETM"; 
-					//std::string filename = "../datasets/volume/torus_translate_fixed.tet"; 
-					//std::string filename = "../datasets/volume/in/bone_RSF"; 
-			//	std::string filename = "../datasets/volume/cube_low_fixed.tet";
-			//	std::string filename = "../datasets/volume/fandisk_Wenping_triangle_fixed.tet";
-			//std::string filename = "../datasets/volume/hand_xinli_fixed.tet"; 
-				//	std::string filename = "../datasets/volume/dime_counting_tubeTETM"; 
-			//std::string filename = "../datasets/cube.ply";
-			//std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/fertility_tri.obj"; 
-			//std::string filename = "../datasets/inputmodels/inputmodels/fandisk.obj";
-			//std::string filename = "../datasets/surface/in/plane.obj"; 
-			//std::string filename = "../datasets/inputmodels/inputmodels/chinese_lion100K.obj";
-			//std::string filename = "../datasets/inputmodels/inputmodels/dilo.obj"; 
-			//std::string filename = "../datasets/instant-data/ifam_supplemental/ifam_database/tri/armadillo.obj";
-			//std::string filename = "../datasets/inputmodels/inputmodels/armadillo_refined.obj"; 
-			//std::string filename = "../datasets/inputmodels/inputmodels/dilo.obj"; 
-				
-			//std::string filename = "../datasets/bunny/bunny"; 
-				//std::string filename = "../datasets/ellipsoid/ellipsoid";
+		std::string filename;
+        if (args.size() > 0)
+            filename = args[0];
+        nanogui::ref<Viewer> viewer = new Viewer(filename, fullscreen);
+        viewer->setVisible(true);
 
-            if (args.size() > 0)
-                filename = args[0];
-            nanogui::ref<Viewer> viewer = new Viewer(filename, fullscreen);
-            viewer->setVisible(true);
-            if (Serializer::isSerializedFile(filename))
-                viewer->loadState(filename);
-
-            nanogui::mainloop();
-        }
+        nanogui::mainloop();
 
         nanogui::shutdown();
     } catch (const std::runtime_error &e) {

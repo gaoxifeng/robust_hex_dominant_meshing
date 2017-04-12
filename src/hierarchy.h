@@ -42,12 +42,6 @@ public:
 	void build();
 	void construct_tEs_tFEs(MatrixXu & F, std::vector<std::vector<uint32_t>> &mtFes, std::vector<tuple_E> &mtEs);
 	bool tet_meshing();
-//========HYBRID===========//
-	void convert_to_tri_hybridmesh(Mesh &hmi);
-	void compute_volume_ratio(Mesh &hmi, Mesh_Quality &mq);
-	void compute_self_intersection(Mesh &hmi, Mesh_Quality &mq);
-//========HYBRID===========//
-
 
     bool tetMesh() const { return mT.cols() > 0; }
     bool triMesh() const { return mT.cols() == 0; }
@@ -114,7 +108,6 @@ public:
 	void tagging_singularities_T_nodes();
 
 
-	bool extractTet();
 	bool meshExtraction3D();
 	void construct_Es_Fs_Polyhedral();
 	void orient_hybrid_mesh(MatrixXf &HV, vector<vector<uint32_t>> &HF, vector<vector<uint32_t>> &HP, vector<vector<bool>> &HPF_flag);

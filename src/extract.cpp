@@ -1064,12 +1064,7 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 			break;
 		}
 		edge_tagging2D(ledges);
-
-		//if (ledges.size() == 1) {
-		//	F_tag = mFs2D;
-		//	break;
-		//}
-
+		
 		triangle_Switch = false;
 		if (ledges.size() && splitting) {
 			std::cout << "split long edges ..." << ledges.size() << endl;
@@ -1096,26 +1091,6 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 			get<4>(mEs[i]) = Edge_tag::B;
 		}
 	}
-
-	//if (!splitting && !doublets && !decomposes) {
-	//	//edge color for morphing2
-	//	
-	//	E_rend_o.resize(6, omEs.size() * 2);
-	//	composit_edges_colors(mV[0], omEs, E_rend_o);
-	//	E_O_rend_o.resize(6, omEs.size() * 2);
-	//	for (uint32_t i = 0; i< Reverse_V_map.size(); i++) {
-	//		if (Reverse_V_map[i].empty())
-	//			continue;
-	//		for (uint32_t j = 0; j < Reverse_V_map[i].size(); j++) {
-	//			mV_tago.col(Reverse_V_map[i][j]) = mV_tago.col(i);
-	//		}
-	//	}
-	//	composit_edges_colors(mV_tago, omEs, E_O_rend_o);
-	//	E_I_rend_o = E_rend_o;
-
-	//	cout << "omEs " << omEs.size() << endl;
-	//}
-
 	////////////////
 	topology_check_2D(F_tag, FEs_tag, genus_aft, manifoldness_aft);
 	std::cout << "Output genus: " << genus_aft << "		manifoldness: " << manifoldness_aft << endl;
@@ -1137,8 +1112,6 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 	std::cout << "Total polygon: " << F_tag.size() << "  Quad_num: " << quad_num << "  Ratio: " << Float(quad_num) / F_tag.size() << endl;
 	for (uint32_t i = 0; i < Q_type.size(); i++)
 		if (Q_type[i]) std::cout << i << "_thgon: " << Q_type[i] << endl;
-
-	tagging_singularities_T_nodes();
 	return true;
 
 }
