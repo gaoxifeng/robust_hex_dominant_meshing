@@ -38,9 +38,6 @@ public:
     Viewer(std::string &filename, bool fullscreen);
     ~Viewer();
 
-    void saveState(const std::string &filename);
-    void loadState(const std::string &filename);
-
 protected:
     void drawContents();
 

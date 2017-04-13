@@ -161,6 +161,21 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		mTranslate = false;
 	}
 
+//Parameters
+	new Label(window, "Output scale", "sans-bold");
+	mScaleBox = new FloatBox<Float>(window);
+	mScaleBox->setValue(mRes.scale());
+	mScaleBox->setEditable(true);
+	mScaleBox->setAlignment(TextBox::Alignment::Right);
+	mScaleBox->setId("outputscale");
+
+	mTmeshingBtn = new Button(window, "Tet-meshing", ENTYPO_ICON_FLASH);
+	mTmeshingBtn->setBackgroundColor(Color(0, 0, 255, 25));
+	mTmeshingBtn->setFlags(Button::Flags::ToggleButton);
+	mTmeshingBtn->setChangeCallback([&](bool value) {
+		mRes.tet_meshing();
+	});
+
 //Config Layers
 	PopupButton *openBtn3 = new PopupButton(window, "Config Layers");
 	auto popup3 = openBtn3->popup();
@@ -192,21 +207,6 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
         l->setChecked(false);
         l->setId("layer." + std::to_string(ctr++));
     }
-//Parameters
-	mTmeshingBtn = new Button(window, "Tet-meshing", ENTYPO_ICON_FLASH);
-	mTmeshingBtn->setBackgroundColor(Color(0, 0, 255, 25));
-	mTmeshingBtn->setFlags(Button::Flags::ToggleButton);
-	mTmeshingBtn->setChangeCallback([&](bool value) {
-		mRes.tet_meshing();
-	});
-
-	new Label(window, "Output scale", "sans-bold");
-	mScaleBox = new FloatBox<Float>(window);
-	mScaleBox->setValue(mRes.scale());
-	mScaleBox->setEditable(true);
-	mScaleBox->setAlignment(TextBox::Alignment::Right);
-	mScaleBox->setId("outputscale");
-
 //build structure	
 	mSolveDatastructureBtn = new Button(window, "Build-Structure", ENTYPO_ICON_FLASH);
 	mSolveDatastructureBtn->setBackgroundColor(Color(0, 0, 255, 25));
@@ -673,92 +673,7 @@ bool Viewer::keyboardEvent(int key, int scancode, int action, int modifiers) {
         return true;
     if (action != GLFW_PRESS)
         return false;
-    if (key == 'S') {
-        try {
-            saveState("state.bin");
-            return true;
-        } catch (const std::exception &ex) {
-            cout << "Could not save current state: "<< ex.what() << endl;
-        }
-    } else if (key == 'L') {
-        try {
-            loadState("state.bin");
-            return true;
-        } catch (const std::exception &ex) {
-            cout << "Could not load current state: "<< ex.what() << endl;
-        }
-    }
-
-
-    return false;
-}
-
-void Viewer::saveState(const std::string &filename) {
-    Timer<> timer;
-    timer.beginStage("Writing application state to \"" + filename + "\"");
-    Serializer serializer(filename, true);
-    mRes.save(serializer);
-    mOptimizer->save(serializer);
-    serializer.set("gui", (Widget&) *this);
-    serializer.set("tetShader", mTetShader);
-    serializer.set("meshShader", mMeshShader);
-    serializer.set("orientationFieldShaderTri", mOrientationFieldShaderTri);
-    serializer.set("orientationFieldShaderTet", mOrientationFieldShaderTet);
-    serializer.set("orientationSingularityShaderTri", mOrientationSingularityShaderTri);
-    serializer.set("orientationSingularityShaderTet", mOrientationSingularityShaderTet);
-    serializer.set("positionFieldShader", mPositionFieldShader);
-    serializer.set("positionSingularityShaderTri", mPositionSingularityShaderTri);
-    serializer.set("positionSingularityShaderTet", mPositionSingularityShaderTet);
-    serializer.set("mSplit", mSplit);
-    serializer.set("mLightPosition", mLightPosition);
-    serializer.push("camera");
-    serializer.set("zoom", mCamera.zoom);
-    serializer.set("viewAngle", mCamera.viewAngle);
-    serializer.set("dnear", mCamera.dnear);
-    serializer.set("dfar", mCamera.dfar);
-    serializer.set("eye", mCamera.eye);
-    serializer.set("center", mCamera.center);
-    serializer.set("up", mCamera.up);
-    serializer.set("modelTranslation", mCamera.modelTranslation);
-    serializer.set("modelZoom", mCamera.modelZoom);
-    serializer.set("arcball", mCamera.arcball.state());
-    serializer.pop();
-    timer.endStage(memString(serializer.size()));
-}
-
-void Viewer::loadState(const std::string &filename) {
-    Timer<> timer;
-    timer.beginStage("Loading application state from \"" + filename + "\"");
-    Serializer serializer(filename, false);
-    mRes.load(serializer);
-    mOptimizer->load(serializer);
-    serializer.get("gui", (Widget&) *this);
-    serializer.get("tetShader", mTetShader);
-    serializer.get("meshShader", mMeshShader);
-    serializer.get("orientationFieldShaderTet", mOrientationFieldShaderTet);
-    serializer.get("orientationFieldShaderTri", mOrientationFieldShaderTri);
-    serializer.get("positionFieldShader", mPositionFieldShader);
-    serializer.get("orientationSingularityShaderTri", mOrientationSingularityShaderTri);
-    serializer.get("orientationSingularityShaderTet", mOrientationSingularityShaderTet);
-    serializer.get("positionSingularityShaderTri", mPositionSingularityShaderTri);
-    serializer.get("positionSingularityShaderTet", mPositionSingularityShaderTet);
-    serializer.get("mSplit", mSplit);
-    serializer.get("mLightPosition", mLightPosition);
-    serializer.push("camera");
-    serializer.get("zoom", mCamera.zoom);
-    serializer.get("viewAngle", mCamera.viewAngle);
-    serializer.get("dnear", mCamera.dnear);
-    serializer.get("dfar", mCamera.dfar);
-    serializer.get("eye", mCamera.eye);
-    serializer.get("center", mCamera.center);
-    serializer.get("up", mCamera.up);
-    serializer.get("modelTranslation", mCamera.modelTranslation);
-    serializer.get("modelZoom", mCamera.modelZoom);
-    Quaternionf arcballState;
-    serializer.get("arcball", arcballState);
-    mCamera.arcball.setState(arcballState);
-    serializer.pop();
-    timer.endStage(memString(serializer.size()));
+     return false;
 }
 
 void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,

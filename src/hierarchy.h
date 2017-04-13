@@ -133,9 +133,6 @@ public:
 
     AABB aabb() const { return mAABB; }
 
-    void save(Serializer &serializer) const;
-    void load(Serializer &serializer);
-
     size_t vertexCount() const { return mV.size() > 0 ? mV[0].cols() : 0; }
     size_t faceCount() const { return mF.cols(); }
     size_t tetCount() const { return mT.cols(); }
@@ -146,19 +143,13 @@ public:
 	Float scale() const { return ratio_scale; }
 	void setScale(Float scale) { 
 		ratio_scale = scale; 
-		mScale = ms.mAverageEdgeLength* scale; 
+		mScale = diagonalLen * scale; 
 		mInvScale = 1.f / mScale;}
 
     ordered_lock &mutex() const { return mMutex; }
 
     int levels() const { return mL.size(); }
 public:
-	//for para
-	bool global_parameterization;
-	MatrixXf PV;
-	MatrixXu PF;
-	vector<vector<int32_t>> V2PV_map;
-	vector<int32_t> PV2V_map;
 	//for both 2D & 3D 
     std::vector<MatrixXf> mV;
     std::vector<MatrixXf> mN;
@@ -188,6 +179,7 @@ public:
     Float mAverageEdgeLength;
     mutable ordered_lock mMutex;
     Float mScale, mInvScale;
+	Float diagonalLen;
 	Float ratio_scale;
 	Float tet_elen, tElen_ratio;
 

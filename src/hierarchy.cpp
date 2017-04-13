@@ -19,7 +19,6 @@ MultiResolutionHierarchy::MultiResolutionHierarchy() {
 	tet_elen = 0.6;
 	re_color = true;
 	Qquadric = splitting = decomposes = doublets = triangles = false;
-	global_parameterization = false;
 }
 
 bool MultiResolutionHierarchy::load(const std::string &filename) {
@@ -44,7 +43,9 @@ bool MultiResolutionHierarchy::load(const std::string &filename) {
 	);
 
 	ms = compute_mesh_stats(mF, mV[0]);
-	tet_elen = tElen_ratio * ms.mAverageEdgeLength;
+	diagonalLen = 3 * (mAABB.max - mAABB.min).norm() / 100;
+
+	tet_elen = tElen_ratio * ratio_scale * diagonalLen / 3;
 
     return true;
 }
@@ -109,16 +110,14 @@ bool MultiResolutionHierarchy::tet_meshing()
 	else {
 		V = mV[0];
 		F = mF;
-		//return false;
 	}
 	Vector3f minV = mV[0].rowwise().minCoeff() + Vector3f(-0.1, -0.1, -0.1),
 		maxV = mV[0].rowwise().maxCoeff() + Vector3f(0.1, 0.1, 0.1);
-	//std::vector<std::vector<Float>> Vs(8);
+
 	MatrixXf Vs(3, 8);
 	for(uint32_t i=0;i<8;i++)
 		for (uint32_t j = 0; j < 3; j++) {
 			short bit = ((1 << j) & i) >> j;
-			//Vs[i].push_back(bit *minV[j] + (1 - bit)*maxV[j]);
 			Vs(j, i) = (bit *minV[j] + (1 - bit)*maxV[j]);
 		}
 	MatrixXu tris_Cube(12, 3);
@@ -138,20 +137,12 @@ bool MultiResolutionHierarchy::tet_meshing()
 	tris_Cube.transposeInPlace();
 	orient_triangle_mesh_index(Vs, tris_Cube);
 
-	//MatrixXu tets_Cube(4, 6);
-	//tets_Cube << 2, 4, 7, 6,
-	//	2, 4, 3, 0,
-	//	4, 2, 7, 3,
-	//	0, 3, 4, 1,
-	//	4, 3, 1, 5,
-	//	3, 4, 5, 7;
 	tetgenio in_bg_, in, addin, in_bg, out_, out;
 
 	in_bg_.numberofpoints = 8;
 	in_bg_.pointlist = new REAL[8 * 3];
 	for (uint32_t i = 0; i < 8; i++)
 		for (uint32_t j = 0; j < 3; j++)
-			//in_bg_.pointlist[3* i+j] = Vs[i][j];
 			in_bg_.pointlist[3 * i + j] = Vs(j, i);
 	in_bg_.numberoffacets = 12;
 	in_bg_.facetlist = new tetgenio::facet[12];
@@ -159,7 +150,6 @@ bool MultiResolutionHierarchy::tet_meshing()
 	tetgenio::facet *f0;
 	tetgenio::polygon *p0;
 	for (uint32_t i = 0; i < in_bg_.numberoffacets; i++) {
-		// Facet 1. The leftmost facet.
 		f0 = &in_bg_.facetlist[i];
 		f0->numberofpolygons = 1;
 		f0->polygonlist = new tetgenio::polygon[f0->numberofpolygons];
@@ -171,14 +161,8 @@ bool MultiResolutionHierarchy::tet_meshing()
 		p0->vertexlist[0] = tris_Cube(0, i);
 		p0->vertexlist[1] = tris_Cube(1, i);
 		p0->vertexlist[2] = tris_Cube(2, i);
-		// Set 'in.facetmarkerlist'
 		in_bg_.facetmarkerlist[i] = 1;
 	}
-	//in_bg_.numberoftetrahedra = 6;
-	//in_bg_.tetrahedronlist = new int[6 * 4];
-	//for (uint32_t i = 0; i < 6; i++)
-	//	for (uint32_t j = 0; j < 4; j++)
-	//	in_bg_.tetrahedronlist[4* i + j] = tets_Cube(j, i);
 	tetrahedralize("pq", &in_bg_, &out_);
 
 	in_bg.numberofpoints = out_.numberofpoints;
@@ -195,11 +179,9 @@ bool MultiResolutionHierarchy::tet_meshing()
 	for (int i = 0; i<in_bg.numberofpoints; i++)
 		in_bg.pointmtrlist[i] = tet_elen;
 	
-
 	tetgenio::facet *f;
 	tetgenio::polygon *p;
 
-	// All indices start from 1.
 	in.firstnumber = 0;
 
 	in.numberofpoints = V.cols();
@@ -220,7 +202,6 @@ bool MultiResolutionHierarchy::tet_meshing()
 
 	for (int i = 0; i<in.numberoffacets; i++)
 	{
-		// Facet 1. The leftmost facet.
 		f = &in.facetlist[i];
 		f->numberofpolygons = 1;
 		f->polygonlist = new tetgenio::polygon[f->numberofpolygons];
@@ -233,31 +214,9 @@ bool MultiResolutionHierarchy::tet_meshing()
 		p->vertexlist[1] = F(1,i);
 		p->vertexlist[2] = F(2,i);
 
-		// Set 'in.facetmarkerlist'
 		in.facetmarkerlist[i] = 1;
 	}
-	tetrahedralize("pqm", &in, &out, &addin, &in_bg);//pq1.414Va0.0001;q1.1
-	//tetrahedralize("pq", &in, &out_);//pq1.414Va0.0001;q1.1
-	//in_bg.numberofpoints = out_.numberofpoints;
-	//in_bg.pointlist = new REAL[in_bg.numberofpoints * 3];
-	//for (uint32_t i = 0; i < 3 * out_.numberofpoints; i++)
-	//	in_bg.pointlist[i] = out_.pointlist[i];
-	//in_bg.numberoftetrahedra = out_.numberoftetrahedra;
-	//in_bg.tetrahedronlist = new int[out_.numberoftetrahedra * 4];
-	//for (uint32_t i = 0; i < 4 * out_.numberoftetrahedra; i++)
-	//	in_bg.tetrahedronlist[i] = out_.tetrahedronlist[i];
-	//in_bg.pointmtrlist = new double[in_bg.numberofpoints];
-	//in_bg.numberofpointmtrs = 1;
-	//std::cout << "target tet edge len: " << tet_elen << endl;
-	//for (int i = 0; i<in_bg.numberofpoints; i++)
-	//{
-	//	in_bg.pointmtrlist[i] = tet_elen;
-	//}
-	//
-	//tetrahedralize("pqm", &in, &out, &addin, &in_bg);//pq1.414Va0.0001;q1.1
-	
-	////tetrahedralize(reinterpret_cast<tetgenbehavior *>("pq1.414Y"), &in, &out);//pq1.414Va0.0001;q1.1
-
+	tetrahedralize("pqm", &in, &out, &addin, &in_bg);
 	mV[0].setZero(); mV[0].resize(3, out.numberofpoints);
 	for (uint32_t i = 0; i < out.numberofpoints; i++) {
 		for (uint32_t j = 0; j < 3; j++)
@@ -630,7 +589,7 @@ void MultiResolutionHierarchy::build() {
 
 	mBVH = new BVH(&mF, &mV[0], mAABB);
 	mBVH->build();
-	mScale = ms.mMaximumEdgeLength * ratio_scale;
+	mScale = diagonalLen * ratio_scale;
 	mInvScale = 1.f / mScale;
 
 	sta.tN = mF.cols();
@@ -665,10 +624,4 @@ void MultiResolutionHierarchy::construct_tEs_tFEs(MatrixXu & F, std::vector<std:
 
 		mtFes[std::get<2>(temp[i])][std::get<3>(temp[i])] = E_num;
 	}
-}
-
-void MultiResolutionHierarchy::save(Serializer &serializer) const {
-}
-
-void MultiResolutionHierarchy::load(Serializer &serializer) {
 }
