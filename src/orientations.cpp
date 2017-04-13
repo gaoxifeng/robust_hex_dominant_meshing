@@ -9,7 +9,6 @@ void MultiResolutionHierarchy::smoothOrientationsTri(uint32_t l, bool alignment,
     MatrixXf &Q = mQ[l];
 
     Timer<> timer;
-   // timer.beginStage("Smoothing orientations at level " + std::to_string(l));
     double error = 0;
     int nLinks = 0;
     MatrixXf Q_new(Q.rows(), Q.cols());
@@ -28,7 +27,6 @@ void MultiResolutionHierarchy::smoothOrientationsTri(uint32_t l, bool alignment,
                 Vector3f q_i = Vector3f::Zero();
                 Vector3f n_i = N.col(i);
 
-				//if (l == 0 && nV_boundary_flag[l][i]) {
 				if (nV_boundary_flag[l][i]) {
 					Q_new.col(i) = Q.col(i);
 					continue;
@@ -75,7 +73,6 @@ void MultiResolutionHierarchy::smoothOrientationsTri(uint32_t l, bool alignment,
         }
     );
 
-    //timer.endStage("E = " + std::to_string(error / nLinks));
     mOrientationIterations++;
     Q = std::move(Q_new);
 }
@@ -87,7 +84,6 @@ void MultiResolutionHierarchy::smoothOrientationsTet(uint32_t l, bool alignment,
 
     Timer<> timer;
 
-    //timer.beginStage("Smoothing orientations at level " + std::to_string(l));
     double error = 0;
     int nLinks = 0;
     MatrixXf Q_new(Q.rows(), Q.cols());
@@ -102,11 +98,6 @@ void MultiResolutionHierarchy::smoothOrientationsTet(uint32_t l, bool alignment,
             int nLinksLocal = 0;
             for (uint32_t k = range.begin(); k != range.end(); ++k) {
 #endif 
-				//std::vector<std::pair<uint32_t, Float>> neighbors;
-				//double errorLocal = 0;
-				//int nLinksLocal = 0;
-				//for (uint32_t k = 0; k < L.outerSize(); ++k) {
-
 				SMatrix::InnerIterator it(L, k);
 
                 uint32_t i = it.row();
@@ -155,7 +146,6 @@ void MultiResolutionHierarchy::smoothOrientationsTet(uint32_t l, bool alignment,
         }
     );
 #endif
-    //timer.endStage("E = " + std::to_string(error / nLinks));
     mOrientationIterations++;
     Q = std::move(Q_new);
 }
@@ -166,7 +156,6 @@ void MultiResolutionHierarchy::prolongOrientations(int level) {
     for (int k = 0; k < P.outerSize(); ++k) {
         SMatrix::InnerIterator it(P, k);
 		for (; it; ++it) {
-			//if (!tetMesh() && (level == 0 && nV_boundary_flag[level][it.row()])) continue;
 			if (!tetMesh() && (nV_boundary_flag[level][it.row()])) continue;
 			mQ[level].col(it.row()) = mQ[level + 1].col(it.col());
 		}
@@ -285,7 +274,7 @@ void MultiResolutionHierarchy::detectOrientationSingularitiesTet() {
                         << rot_axis3.dot(normal) << std::endl;*/
                 }
 				if (rot1.index < 4 || rot1.index > 9)
-					;// std::cout << "Invalid rotation!" << std::endl;
+					;
 
                 tbb::spin_mutex::scoped_lock guard(mutex);
                 if (singularityCount + 1 > S.cols())
@@ -298,12 +287,4 @@ void MultiResolutionHierarchy::detectOrientationSingularitiesTet() {
 
     S.conservativeResize(6, singularityCount);
     timer.endStage("Found " + std::to_string(singularityCount) + " singular faces");
-	
-
-	char path[1024], path_[1024];
-	strcpy(path_, outpath.c_str());
-	strncpy(path_, outpath.c_str(), sizeof(path_));
-	path_[sizeof(path_) - 1] = 0;
-	sprintf(path, "%s%s", path_, "_Rosy.sing");
-	write_singularities_SING(S, path);
 }

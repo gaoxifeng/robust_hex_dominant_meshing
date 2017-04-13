@@ -8,7 +8,6 @@ void MultiResolutionHierarchy::smoothPositionsTri(uint32_t l, bool alignment, bo
     MatrixXf &O = mO[l];
 
     Timer<> timer;
-   // timer.beginStage("Smoothing orientations at level " + std::to_string(l));
 
     double error = 0;
     int nLinks = 0;
@@ -73,7 +72,6 @@ void MultiResolutionHierarchy::smoothPositionsTri(uint32_t l, bool alignment, bo
                 o_i = findClosest(o_i, q_i, n_i, v_i, mScale, mInvScale);
                 o_i -= n_i.dot(o_i - v_i) * n_i;
 
-				//if(l ==0 && nV_boundary_flag[l][i])
 				if (nV_boundary_flag[l][i])
 					o_i = q_i.dot(o_i - v_i) * q_i + v_i;
                 
@@ -84,50 +82,7 @@ void MultiResolutionHierarchy::smoothPositionsTri(uint32_t l, bool alignment, bo
             nLinks += nLinksLocal;
         }
     );
-    //timer.endStage("E = " + std::to_string(error / nLinks));
     mOrientationIterations++;
-    O = std::move(O_new);
-}
-
-void MultiResolutionHierarchy::smoothPositionsTriCombed() {
-    auto const &Q = mQ_combed, &N = mN[0], &V = mV[0];
-    auto const &Oi = mO_combed;
-    auto const &F = mF;
-    auto &O = mO[0];
-
-    MatrixXf O_new;
-    VectorXi count;
-    O_new.setZero(O.rows(), O.cols());
-    count.setZero(O.cols());
-
-    for (uint32_t f = 0; f < mF.cols(); ++f) {
-        for (uint32_t i =0; i<3; ++i) {
-            uint32_t v0 = F(i, f), v1 = F((i + 1) % 3, f);
-            typedef Eigen::Matrix<Float, 3, 2> Matrix;
-
-            const Vector3f &q0 = Q.col(3 * f + i);
-            const Vector3f &q1_ = Q.col(3 * f + (i + 1) % 3);
-            const Vector2i &t0 = Oi.col(3 * f + i);
-            const Vector3f &o1_ = O.col(v1);
-            const Vector3f &n0 = N.col(v0), &n1 = N.col(v1);
-            const Vector3f &p0 = V.col(v0), &p1 = V.col(v1);
-
-            Vector3f q1 = rotateVectorIntoPlane(q1_, n1, n0);
-            Vector3f qn = (q0 + q1).normalized();
-            Vector3f middle = middle_point(p0, n0, p1, n1);
-            Vector3f o1 = rotateVectorIntoPlane(o1_ - middle, n1, n0) + middle;
-            Matrix M = (Matrix() << qn, n0.cross(qn)).finished();
-            o1 += (M * t0.cast<Float>()) * mScale;
-            o1 -= n0.dot(o1 - p0) * n0;
-
-            O_new.col(v0) += o1;
-            count[v0]++;
-        }
-    }
-    for (int i=0; i<O.cols(); ++i) {
-        if (count[i] > 0)
-            O_new.col(i) /= count[i];
-    }
     O = std::move(O_new);
 }
 
@@ -298,8 +253,6 @@ void MultiResolutionHierarchy::detectPositionSingularitiesTet() {
     Timer<> timer;
     timer.beginStage("Computing position singularities");
 
-	//projectBack3D();
-
     const MatrixXu &T = mT;
     const MatrixXf &V = mV[0], &O = mO[0], &Q = mQ[0];
     MatrixXf &S = mPositionSingularities;
@@ -349,11 +302,4 @@ void MultiResolutionHierarchy::detectPositionSingularitiesTet() {
     );
     S.conservativeResize(6, singularityCount);
     timer.endStage("Found " + std::to_string(singularityCount) + " singular faces");
-
-	char path[1024], path_[1024];
-	strcpy(path_, outpath.c_str());
-	strncpy(path_, outpath.c_str(), sizeof(path_));
-	path_[sizeof(path_) - 1] = 0;
-	sprintf(path, "%s%s", path_, "_Posy.sing");
-	write_singularities_SING(S, path);
 }

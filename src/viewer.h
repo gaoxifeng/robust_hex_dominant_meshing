@@ -110,7 +110,6 @@ protected:
 	Button *mSolveDatastructureBtn;
     Button *mSolveOrientationBtn;
     Button *mSolvePositionBtn;
-	Button *mEdgeTaggingBtn;
 	CheckBox *Configlayers[Config_LayerCount];
     Button *mExtractBtn;
     CheckBox *mLayers[LayerCount];
@@ -135,12 +134,8 @@ protected:
 
 	GLShader mEdge_color_morph2;
 
-	GLShader mExtractionResultShader_E_tagging;
-	GLShader mExtractionResultShader_E_degeneracy;
-	GLShader mExtractionResultShader_E_triangle;
 	GLShader mExtractionResultShader_E_done;
 
-	GLShader mExtractionResultShader_F_done_local;
 	GLShader mExtractionResultShader_F_done;
 
     Vector4f mBaseColor, mSpecularColor;

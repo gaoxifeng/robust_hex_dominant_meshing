@@ -9,8 +9,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
 
-if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui/ext/glfw")
-  message(FATAL_ERROR "The Instant Hex Meshes dependency repositories (NanoGUI, GLFW, etc.) are missing! "
+if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/nanoguig/ext/glfw")
+  message(FATAL_ERROR "The robust_hex_dominant_meshing dependency repositories (NanoGUI, GLFW, etc.) are missing! "
     "You probably did not clone the project with --recursive. It is possible to recover "
     "by calling \"git submodule update --init --recursive\"")
 endif()
@@ -74,7 +74,7 @@ endif()
 set(NANOGUI_BUILD_EXAMPLE OFF CACHE BOOL " " FORCE)
 set(NANOGUI_BUILD_SHARED  OFF CACHE BOOL " " FORCE)
 set(NANOGUI_BUILD_PYTHON  OFF CACHE BOOL " " FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui ext_build/nanogui)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/nanoguig ext_build/nanogui)
 set_property(TARGET nanogui glfw glfw_objects bin2c PROPERTY FOLDER "dependencies")
 
 # Build TBB
@@ -92,24 +92,22 @@ set_property(TARGET tet PROPERTY FOLDER "dependencies")
 # Header file directories of dependency libraries
 include_directories(
   # Eigen
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui/ext/eigen
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanoguig/ext/eigen
   # GLFW
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui/ext/glfw/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanoguig/ext/glfw/include
   # GLEW
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui/ext/glew/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanoguig/ext/glew/include
   # NanoVG
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui/ext/nanovg/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanoguig/ext/nanovg/src
   # NanoGUI
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/nanoguig/include
   # Intel Thread Building Blocks
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/tbb/include
   # Pseudorandom number generator
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/pcg32
   # RPLY mesh I/O library
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/rply
-  # Disjoint set data struture
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/dset
- # Tetgen
+  # Tetgen
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/tetgen 
   # Resource file
   ${CMAKE_CURRENT_BINARY_DIR}
@@ -169,7 +167,7 @@ add_executable(robust_hex_dominant_meshing MACOSX_BUNDLE
 
 target_link_libraries(robust_hex_dominant_meshing tbb_static nanogui ${NANOGUI_EXTRA_LIBS} tet)
 
-set_target_properties(robust_hex_dominant_meshing PROPERTIES OUTPUT_NAME "Instant_Hex_Meshes")
+set_target_properties(robust_hex_dominant_meshing PROPERTIES OUTPUT_NAME "robust_hex_dominant_meshing")
 
 if (WIN32)
   # Quench some warnings on MSVC
@@ -178,7 +176,7 @@ if (WIN32)
   endif()
 elseif (APPLE)
   # Build an application bundle on OSX
-  set_target_properties(robust_hex_dominant_meshing PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "Instant_Hex_Meshes")
+  set_target_properties(robust_hex_dominant_meshing PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "robust_hex_dominant_meshing")
   set_target_properties(robust_hex_dominant_meshing PROPERTIES MACOSX_BUNDLE_BUNDLE_GUI_IDENTIFIER "com.im.robust_hex_dominant_meshing")
   set_target_properties(robust_hex_dominant_meshing PROPERTIES MACOSX_BUNDLE_ICON_FILE im.icns)
   set_target_properties(robust_hex_dominant_meshing PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/MacOSXBundleInfo.plist.in)

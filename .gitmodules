@@ -10,3 +10,6 @@
 [submodule "ext/dset"]
 	path = ext/dset
 	url = https://github.com/wjakob/dset
+[submodule "ext/nanoguig"]
+	path = ext/nanoguig
+	url = https://github.com/gaoxifeng/nanogui.git

@@ -80,8 +80,7 @@ public:
 
     void smoothPositionsTet(uint32_t l, bool alignment, bool randomization);
     void smoothPositionsTri(uint32_t l, bool alignment, bool randomization, bool extrinsic);
-    void smoothPositionsTriCombed();
-
+    
     void detectPositionSingularitiesTri();
     void detectPositionSingularitiesTet();
     void prolongPositions(int level);
@@ -91,7 +90,6 @@ public:
 	void init_edge_tagging3D();
 //mesh extraction
 		bool tagging_collapseTri(bool triangle_Switch);
-		uint32_t decompose_polygon();
 
 	bool meshExtraction2D();
 	void edge_tagging2D(vector<uint32_t> &ledges);
@@ -99,9 +97,7 @@ public:
 	bool split_long_edge2D(vector<uint32_t> &ledges);
 	bool split_face2D(bool red_edge);
 	bool remove_doublets2D();
-	Float compute_cost_edge2D(uint32_t v0, uint32_t v1);
 	Float compute_cost_edge2D_angle(int32_t v0, int32_t v1, vector<uint32_t> &vs, MatrixXf &V_);
-	void tagging_singularities_T_nodes();
 
 
 	bool meshExtraction3D();
@@ -119,11 +115,7 @@ public:
 		int32_t share_the_same_fs(vector<uint32_t> &es, const uint32_t eid);
 		Float compute_cost_face3D(vector<uint32_t> &vs, uint32_t rv, bool single);
 		Float compute_cost_edge3D(uint32_t v0, uint32_t v1);
-		void printout_elements(vector<uint32_t> &fs, uint32_t id, uint32_t subid);
-		void printout_elements(vector<uint32_t> &fs, vector<vector<uint32_t>> &HFs, uint32_t id, uint32_t subid);
 		
-		void printout_sim_step(std::vector<uint32_t> &fs, uint32_t id);
-		void printout_sim_step_decompose(std::vector<uint32_t> &fs, uint32_t id, uint32_t subid);
 
 	void composit_edges_colors(MatrixXf &Result_Vs, std::vector<tuple_E> &Es_to_render, MatrixXf &Result_edges);
 	void composit_edges_centernodes_triangles(std::vector<std::vector<uint32_t>> &Actual_Fs, MatrixXf &nodes, MatrixXf &Result_edges, MatrixXf &center_nodes, MatrixXu &Triangles);
@@ -168,7 +160,7 @@ public:
 
 
 	vector<vector<uint32_t>> vnfs;
-	Float quadricW = 1;// 5.e-1;
+	Float quadricW = 1;
 
     MatrixXf mOrientationSingularities;
     MatrixXf mPositionSingularities;

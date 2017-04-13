@@ -2,7 +2,6 @@
 #include "positions.h"
 #include "timer.h"
 #include"quadratic.h"
-
 //3D===========================================================================================================//
 std::vector<std::vector<uint32_t>> mTs;
 
@@ -38,8 +37,6 @@ long long topo_check_time = 0, decomposition_time = 0, total_time = 0;
 
 void construct_Es_TetEs_Fs_TetFs_FEs()
 {
-	//std::cout << "construct_Es_TetEs_Fs_TetFs_FEs" << endl;
-
 	mpEs.clear(); mpFvs.clear(); mpFes.clear(); mpPs.clear(); mpF_boundary_flag.clear();
 	//mpFvs, mpPs, mpF_boundary_flag
 	std::vector<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t>> tempF;
@@ -518,7 +515,6 @@ bool simple_polyhedral_v2(std::vector<std::vector<uint32_t>> &pfs)
 	for (uint32_t m = 0; m<vs_set.size(); m++)
 		PV_npfs_sudo[vs_set[m]].clear();
 	if (non_simple) return false;
-	//test single layer of polyhedral, non non-manifold v and multi-layers of polyhedral
 
 	return true;
 }
@@ -579,7 +575,6 @@ bool simple_polyhedral_v3(vector<vector<uint32_t>> &pfs)
 	for (uint32_t m = 0; m<vs_set.size(); m++)
 		PV_npfs_sudo[vs_set[m]].clear();
 	if (non_simple) return false;
-	//test single layer of polyhedral, non non-manifold v and multi-layers of polyhedral
 
 	return true;
 }
@@ -737,7 +732,6 @@ void MultiResolutionHierarchy::orient_hybrid_mesh(MatrixXf &HV, vector<vector<ui
 	PF_npps_sudo.clear(); PF_npps_sudo.resize(HF.size());
 	for (uint32_t i = 0; i < HP.size(); i++)for (auto fid : HP[i])PF_npps_sudo[fid].push_back(i);
 	//orient surface
-	//cout << "orient surface" << endl;
 	mpF_flag.clear(); mpF_flag.resize(mpF_boundary_flag.size()); std::fill(mpF_flag.begin(), mpF_flag.end(), true);
 
 	uint32_t start_f = 0;
@@ -760,7 +754,6 @@ void MultiResolutionHierarchy::orient_hybrid_mesh(MatrixXf &HV, vector<vector<ui
 			int32_t v1_pos_ = std::find(HF[nfid].begin(), HF[nfid].end(), v1) - HF[nfid].begin();
 
 			if ((v0_pos_ + 1) % HF[nfid].size() == v1_pos_) std::reverse(HF[nfid].begin(), HF[nfid].end());
-//			else if (!same_direction && (v0_pos_ - 1 + HF[nfid].size()) % HF[nfid].size() == v1_pos_) std::reverse(HF[nfid].begin(), HF[nfid].end());
 
 			pf_temp.push(nfid); mpF_flag[nfid] = false;
 		}
@@ -782,8 +775,6 @@ void MultiResolutionHierarchy::orient_hybrid_mesh(MatrixXf &HV, vector<vector<ui
 		for (uint32_t i = 0; i < HF.size(); i++) if (mpF_boundary_flag[i]) std::reverse(HF[i].begin(),HF[i].end());
 	}
 	//orient polyhedral
-	//cout << "orient polyhedral" << endl;
-
 	std::vector<short> F_visit(mpF_boundary_flag.size(), 0);//0 un-visited, 1 visited once, 2 visited twice
 	for (uint32_t i = 0; i < mpF_boundary_flag.size(); i++)if (mpF_boundary_flag[i]) { F_visit[i]++; mpF_flag[i] = true; }
 	std::vector<bool> F_state(mpF_boundary_flag.size(), false);//false is the reverse direction, true is the same direction
@@ -795,14 +786,12 @@ void MultiResolutionHierarchy::orient_hybrid_mesh(MatrixXf &HV, vector<vector<ui
 		if (!candidates.size()) break;
 		for (auto ca : candidates) {
 			if (F_visit[ca] == 2) continue;
-			//if (!PF_npps_sudo[ca].size()) { std::cout << "ERROR: f is isolated" << endl; system("PAUSE"); }
 			uint32_t pid = PF_npps_sudo[ca][0];
 			if (P_visit[pid]) if (PF_npps_sudo[ca].size() == 2) pid = PF_npps_sudo[ca][1];
 			if (P_visit[pid]) {
 				if (F_visit[ca] == 1) { 
-					//cout << "dangling face? " << PF_npps_sudo[ca].size()<< endl; 
 					for (auto p : PF_npps_sudo[ca])
-						;// cout << "pid " << p << endl;
+						;
 					F_visit[ca] = 2; 
 				}
 				continue;
@@ -845,19 +834,13 @@ void MultiResolutionHierarchy::orient_hybrid_mesh(MatrixXf &HV, vector<vector<ui
 			for (auto fid : fs) {
 				if (!mpF_flag[fid]) {
 					;
-					//cout << "fid is missed in polyhedral "<<pid << endl;
-					//printout_elements(P_tag[pid], F_tag, pid, 0);
-					//system("PAUSE");
 				}
 				HPF_flag[pid].push_back(F_state[fid]);
 			}
 		}
 	}
-	//double check face flags
-	//cout << "double check face flags" << endl;
 	for (auto &visit : F_visit) {
 		if (visit != 2) { 
-		 //std::cout << "error visit " << visit << endl; system("PAUSE");
 		} else visit = 0;
 	}
 	std::fill(F_state.begin(), F_state.end(), false);
@@ -865,16 +848,8 @@ void MultiResolutionHierarchy::orient_hybrid_mesh(MatrixXf &HV, vector<vector<ui
 		switch (F_visit[HP[i][j]]) {
 		case 0: F_visit[HP[i][j]]++; F_state[HP[i][j]] = HPF_flag[i][j]; break;
 		case 1: F_visit[HP[i][j]]++; 
-			//if(F_state[HP[i][j]] == HPF_flag[i][j]) {
-			//cout << "error flag " << i<<" "<< HP[i][j] << endl; 
-			//for (auto fid : HP[i]) cout << fid << endl;
-			//printout_elements(P_tag[i], F_tag, i, 0);
-			//system("PAUSE");
-			//}; 
 			break;
 		case 2: {
-			//std::cout << "error visit & flag " << i << " " << HP[i][j] << endl; 
-			//system("PAUSE"); 
 		}
 		}
 	}
@@ -883,7 +858,6 @@ void MultiResolutionHierarchy::swap_data3D() {
 	F_tag.clear(); P_tag.clear();
 	for (auto p : mpPs) if (p.size()) P_tag.push_back(p);
 	F_tag = mpFvs;
-	//for (auto f : mpFvs) if (f.size()) F_tag.push_back(f);
 	if (Qquadric) {
 		reindex_3D(mV_tag, newQ, newQu3D, F_tag, P_tag);
 		mO_copy = mV_tag; mQ_copy = newQ; Quadric_copy = newQu3D;
@@ -897,8 +871,6 @@ void MultiResolutionHierarchy::swap_data3D() {
 }
 
 bool MultiResolutionHierarchy::meshExtraction3D() {
-	Timer<> timer;
-	//std::cout << "Initial: construct_Es_TetEs_Fs_TetFs_FEs" << endl;
 	mQ_copy = mQ[0]; mO_copy = mO[0]; mN_copy = mN[0]; 
 	Quadric_copy.clear(); Quadric_copy.resize(mQ_copy.cols());
 
@@ -920,17 +892,15 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 	mV_tag = mO[0]; newQ = mQ[0]; newN3D = mN[0]; newQu3D = Quadric_copy;
 	//vertex insert.
 	if (ledges.size() && splitting) {
-		//std::cout << "split long edges #"<< ledges.size() << endl;
 		split_long_edge3D(ledges);
 	}
 	for (uint32_t i = 0; i < mpEs.size(); ++i) {
 		switch (get<4>(mpEs[i]))
 		{
-		case Edge_tag::R: Es_red.push(mpEs[i]);  break;// break; //
+		case Edge_tag::R: Es_red.push(mpEs[i]);  break;
 		case Edge_tag::B: break;
-		case Edge_tag::D: Es_red.push(mpEs[i]);  break; //break; 
-														//case 'D': break; 
-		case Edge_tag::H: Es_red.push(mpEs[i]); break; //break; 
+		case Edge_tag::D: Es_red.push(mpEs[i]);  break; 
+		case Edge_tag::H: Es_red.push(mpEs[i]); break; 
 		default: throw std::runtime_error("stuck at a invalid color!");
 		}
 		get<4>(mpEs[i]) = Edge_tag::B;
@@ -942,7 +912,6 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 		//edge-collapse & fusion
 		tagging_collapseTet();
 
-		//std::cout << "swap data..." << endl;
 		swap_data3D();
 		
 		if (times > 10) break;
@@ -950,58 +919,38 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 		Timer<> time_decompose;
 		//face insert
 		if (splitting) {
-			//cout << "split_polyhedral3D" << endl;
 			while (split_polyhedral3D()) {
-				//cout << "split_polyhedral3D loop" << endl;
 				split_face3D(false);
-				//cout << "split_face3D loop" << endl;
 			}
 		}
-
-		//if (h_num == P_tag.size()) {
-		//	equal_times++; if(equal_times ==2) break;
-		//}
-		//else h_num = P_tag.size();
-		//times++;
-
+		
 		edge_tagging3D(ledges);
 		//vertex insert
 		if (ledges.size() && splitting) {
-			//std::cout << "split long edges ..." << ledges.size() << endl;
 			split_long_edge3D(ledges);
-			//std::cout << "split long edges .split_polyhedral3D.." << ledges.size() << endl;
 			split_polyhedral3D();
 		}
 		//edge insert
 		if (splitting) {
-			//std::cout << "split faces..true. " << endl;
 			while (split_face3D(true)) {
-				//std::cout << "split faces.true.loop. " << endl;
 				split_polyhedral3D();
-				//std::cout << "split faces.split_polyhedral3D.loop. " << endl; 
 			}
 		}
 
 		if (splitting) {
-			//std::cout << "split faces..false. " << endl;
 			while (split_face3D(false)) {
-				//std::cout << "split faces.split_polyhedral3D.false. " << endl;
 				split_polyhedral3D();
-				//std::cout << "split faces.split_polyhedral3D.loop. " << endl;
 			}
 		}
-
-		decomposition_time += time_decompose.value();
 
 		while (Es_red.size()) Es_red.pop();
 		for (uint32_t i = 0; i < mpEs.size(); ++i) {
 			switch (std::get<4>(mpEs[i]))
 			{
-			case Edge_tag::R: Es_red.push(mpEs[i]);  break;// break; //
+			case Edge_tag::R: Es_red.push(mpEs[i]);  break;
 			case Edge_tag::B: break;
-			case Edge_tag::D: Es_red.push(mpEs[i]);  break; //break; 
-															//case 'D': break; 
-			case Edge_tag::H: Es_red.push(mpEs[i]); break; //break; 
+			case Edge_tag::D: Es_red.push(mpEs[i]);  break;
+			case Edge_tag::H: Es_red.push(mpEs[i]); break;
 			default: throw std::runtime_error("stuck at a invalid color!");
 			}
 			std::get<4>(mpEs[i]) = Edge_tag::B;
@@ -1051,7 +1000,6 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 	}
 	//output
 	PF_flag.clear();
-	//std::cout << "start orient directions..." << endl;
 	orient_hybrid_mesh(mV_tag, F_tag, P_tag, PF_flag);
 
 	E_final_rend.setZero();
@@ -1063,7 +1011,7 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 }
 
 bool MultiResolutionHierarchy::edge_tagging3D(vector<uint32_t> &ledges) {
-	//std::cout << "Compute target edge tagging" << endl;
+	
 	bool hyperlong_edge = false; ledges.clear();
 	for (auto &e : mpEs) {
 		uint32_t v0 = std::get<0>(e), v1 = std::get<1>(e);
@@ -1111,16 +1059,9 @@ bool MultiResolutionHierarchy::edge_tagging3D(vector<uint32_t> &ledges) {
 				qs0[1] = qs[pos0[1]];
 				qs1[0] = qs[pos1[0]];
 				qs1[1] = qs[pos1[1]];
-
-				//bool this_one = false;
-				//if (i == 893 && ((v0s[1] == 2091 && v1s[1] == 1073) || (v0s[1] == 1073 && v1s[1] == 2091 ))) {
-				//	cout << "893 2091 1073" << endl;
-				//	this_one = true;
-				//}
-
+				
 				tuple<short, Float, Vector3f> a_posy0 = posy3D_completeInfo(mO_copy.col(v0s[0]), qs0[0], mO_copy.col(v0s[1]), qs0[1], mScale, mInvScale);
 				if (std::get<0>(a_posy0) != Edge_tag::B) {
-					//if (this_one) cout << "color not B vs0[1]" << std::get<0>(a_posy0)<<" "<<v0s[1] << endl;
 					continue;
 				}
 
@@ -1130,8 +1071,6 @@ bool MultiResolutionHierarchy::edge_tagging3D(vector<uint32_t> &ledges) {
 
 				tuple<short, Float, Vector3f> a_posy1 = posy3D_completeInfo(mO_copy.col(v1s[0]), qs1[0], mO_copy.col(v1s[1]), qs1[1], mScale, mInvScale);
 				if (std::get<0>(a_posy1) != Edge_tag::B) {
-					//if (this_one) cout << "color not B" << std::get<0>(a_posy1) <<" " << v1s[1] << endl;
-
 					continue;
 				}
 				Vector3f len1 = get<2>(a_posy1);
@@ -1146,20 +1085,14 @@ bool MultiResolutionHierarchy::edge_tagging3D(vector<uint32_t> &ledges) {
 						Vector3f gn = (mO_copy.col(v0s[0]) + mO_copy.col(v0s[1])) * 0.5;
 						tuple<short, Float, Vector3f> a_posy = posy3D_completeInfo(mO_copy.col(v1s[which_v]), qs1[which_v], gn, qn, mScale, mInvScale);
 
-						//if (this_one) cout << "color " << std::get<0>(a_posy) << endl;
-
 						if (std::get<0>(a_posy) != Edge_tag::R) continue;
 
 						vector<uint32_t> sharede;
 						set_intersection(PV_npes_sudo[v0s[0]].begin(), PV_npes_sudo[v0s[0]].end(), PV_npes_sudo[v0s[1]].begin(), PV_npes_sudo[v0s[1]].end(), back_inserter(sharede));
 						if (!sharede.size()) {
-							//cout << "error" << endl; 
 							system("PAUSE");
 						}
 						ledges.push_back(sharede[0]);
-
-						//if (this_one) cout << "added e: " << sharede[0] << endl;
-
 					}
 					else if (std::round(len1[direction1] / len0[direction0]) >= 2) {
 						uint32_t which_v = 1;
@@ -1168,18 +1101,13 @@ bool MultiResolutionHierarchy::edge_tagging3D(vector<uint32_t> &ledges) {
 						Vector3f gn = (mO_copy.col(v1s[0]) + mO_copy.col(v1s[1])) * 0.5;
 						tuple<short, Float, Vector3f> a_posy = posy3D_completeInfo(mO_copy.col(v0s[which_v]), qs0[which_v], gn, qn, mScale, mInvScale);
 						if (std::get<0>(a_posy) != Edge_tag::R) continue;
-						
-						//if (this_one) cout << "color " << std::get<0>(a_posy) << endl;
 
 						vector<uint32_t> sharede;
 						set_intersection(PV_npes_sudo[v1s[0]].begin(), PV_npes_sudo[v1s[0]].end(), PV_npes_sudo[v1s[1]].begin(), PV_npes_sudo[v1s[1]].end(), back_inserter(sharede));
 						if (!sharede.size()) {
-							//cout << "error" << endl; 
 							system("PAUSE");
 						}
 						ledges.push_back(sharede[0]);
-
-						//if (this_one) cout << "added e: " << sharede[0] << endl;
 					}
 				}
 			}
@@ -1187,7 +1115,6 @@ bool MultiResolutionHierarchy::edge_tagging3D(vector<uint32_t> &ledges) {
 	}
 	for (uint32_t i = 0; i < mpFes.size(); i++) {
 		auto &fes = mpFes[i];
-		//if (fes.size() != 3) continue;
 		auto &fvs = mpFvs[i];
 		std::vector<uint32_t> es_temp;
 		//orient es direction
@@ -1261,62 +1188,13 @@ bool MultiResolutionHierarchy::edge_tagging3D(vector<uint32_t> &ledges) {
 				}
 			}
 		}
-		//find the long edge
-		//std::vector<uint32_t> b_es; std::vector<Vector3f> lengths; std::vector<short> dirctions;
-		//int32_t long_eid = -1; short which_dir = -1;
-		//for (auto eid : fes) {
-		//	int32_t v0 = std::get<0>(mpEs[eid]), v1 = std::get<1>(mpEs[eid]), pos0, pos1;
-		//	if (std::find(fvs.begin(), fvs.end(), v0) != fvs.end())
-		//		pos0 = std::find(fvs.begin(), fvs.end(), v0) - fvs.begin();
-		//	else {
-		//		std::cout << "cannot find v" << endl;
-		//		system("PAUSE");
-		//	}
-		//	if (std::find(fvs.begin(), fvs.end(), v1) != fvs.end())
-		//		pos1 = std::find(fvs.begin(), fvs.end(), v1) - fvs.begin();
-		//	else {
-		//		std::cout << "cannot find v" << endl;
-		//		system("PAUSE");
-		//	}
-
-		//	Quaternion q_v0 = qs[pos0], q_v1 = qs[pos1];
-		//	std::tuple<short, Float, Vector3f> a_posy = posy3D_completeInfo(mO_copy.col(v0), q_v0, mO_copy.col(v1), q_v1, mScale, mInvScale);
-
-		//	if (std::get<0>(a_posy) != Edge_tag::B) continue;
-		//	lengths.push_back(std::get<2>(a_posy));
-		//	b_es.push_back(eid);
-
-		//	for (uint32_t j = 0; j < 3; j++) {
-		//		Vector3f len = std::get<2>(a_posy);
-		//		if (len[j] > 0.5) {
-		//			dirctions.push_back(j);
-		//			if (std::round(len[j]) > 1) { long_eid = eid; which_dir = j; break; }
-		//		}
-		//	}
-		//}
-		////if (dirctions.size() <= 1) continue;//not duplicated edges are blue
-		//if (dirctions.size() != 3) continue;//not all the three edges are blue
-		//if (dirctions[0] != dirctions[1] || dirctions[0] != dirctions[2] || dirctions[1] != dirctions[2]) continue;//for triangle
-		//if (long_eid == -1) {
-		//	Float largest_length = 0;
-		//	for (uint32_t j = 0; j < lengths.size(); j++) {
-		//		Float cur_len = 0;
-		//		for (uint32_t k = 0; k < 3; k++) if (lengths[j][k] > 0.5)cur_len = lengths[j][k];
-		//		if (largest_length < cur_len) { largest_length = cur_len; long_eid = b_es[j]; }
-		//	}
-		//	which_dir = dirctions[0];
-
-		//	ledges.push_back(long_eid);
-		//}
 	}
 
 	sort(ledges.begin(), ledges.end()); ledges.erase(unique(ledges.begin(), ledges.end()), ledges.end());
-	//cout << "ledges " << ledges.size() << endl;
 	return hyperlong_edge;
 }
 void MultiResolutionHierarchy::init_edge_tagging3D()
 {
-	std::cout << "construct_Es_TetEs_Fs_TetFs_FEs" << endl;
 	mTs.clear(); mO_copy = mO[0];
 	mTs.resize(mT.cols());
 	for (uint32_t i = 0; i < mT.cols(); ++i)
@@ -1325,32 +1203,9 @@ void MultiResolutionHierarchy::init_edge_tagging3D()
 	construct_Es_TetEs_Fs_TetFs_FEs();
 
 	std::cout << "Compute target edge tagging" << endl;
-	//for (uint32_t i = 0; i < mpEs.size(); ++i) {
-	//	uint32_t v0 = std::get<0>(mpEs[i]), v1 = std::get<1>(mpEs[i]);
-	//	Quaternion q_next = Quaternion::applyRotation(mQ[0].col(v1), mQ[0].col(v0));
-	//	Vector3i iv = findClosestPair_biased(mO[0].col(v0), mQ[0].col(v0), mO[0].col(v1), q_next, mScale, mInvScale).second;
-	//	if (iv[0] > 1) iv[0] = 1; else if (iv[0] < -1) iv[0] = -1;
-	//	if (iv[1] > 1) iv[1] = 1; else if (iv[1] < -1) iv[1] = -1;
-	//	if (iv[2] > 1) iv[2] = 1; else if (iv[2] < -1) iv[2] = -1;
-	//	const Vector3f o0 = mO[0].col(v0), o1 = mO[0].col(v1);
-	//	Float energy = (o0 - o1).norm();
-	//	//energy = (mV[0].col(v0) - mV[0].col(v1)).norm();
-	//	ei = mpEs[i]; std::get<3>(mpEs[i]) = std::get<3>(ei) = energy;
-	//	switch (color_name(iv))
-	//	{
-	//	case 'R': std::get<4>(mpEs[i]) = Edge_tag::R; std::get<4>(ei) = Edge_tag::R;  break;// break; //
-	//	case 'B': break;
-	//	case 'D': std::get<4>(mpEs[i]) = Edge_tag::D; std::get<4>(ei) = Edge_tag::D; std::get<3>(ei) = energy;  break; //break; 
-	//																													//case 'D': break; 
-	//	case 'H': std::get<4>(mpEs[i]) = Edge_tag::H; std::get<4>(ei) = Edge_tag::H; std::get<3>(ei) = energy; break; //break; 
-	//	default: throw std::runtime_error("stuck at a invalid color!");
-	//	}
-	//}
 	for (uint32_t i = 0; i < mpEs.size(); ++i) {
 		uint32_t v0 = std::get<0>(mpEs[i]), v1 = std::get<1>(mpEs[i]);
 		Quaternion q_next = Quaternion::applyRotation(mQ[0].col(v1), mQ[0].col(v0));
-		 //std::pair<short, short> a_pair= assignColorBiased(mO[0].col(v0), mQ[0].col(v0), mO[0].col(v1), q_next, mScale, mInvScale);
-		 //std::get<4>(mpEs[i]) = std::get<0>(a_pair); std::get<6>(mpEs[i]) = std::get<1>(a_pair);
 
 		 std::pair<int, Float> a_pair = assignColorWeighted3D(mO[0].col(v0), mQ[0].col(v0), mO[0].col(v1), q_next, mScale, mInvScale);
 		 std::get<4>(mpEs[i]) = a_pair.first;
@@ -1358,8 +1213,6 @@ void MultiResolutionHierarchy::init_edge_tagging3D()
 
 		const Vector3f o0 = mO[0].col(v0), o1 = mO[0].col(v1);
 		Float energy = (o0 - o1).norm();
-		//energy = (mV[0].col(v0) - mV[0].col(v1)).norm();
-		//std::get<3>(mpEs[i]) = energy;
 	}
 	for (uint32_t i = 0; i < mpFes.size(); ++i) {
 		short n_R = 0;
@@ -1413,8 +1266,6 @@ void MultiResolutionHierarchy::init_edge_tagging3D()
 		VSets.push_back(v_set);
 	}
 
-	//projectBack3D2(VSets);
-
 	E_O_rend.resize(6, mpEs.size() * 2);
 	composit_edges_colors(mO_center, mpEs, E_O_rend);
 
@@ -1424,10 +1275,10 @@ void MultiResolutionHierarchy::init_edge_tagging3D()
 	for (uint32_t i = 0; i < mpEs.size(); ++i) {
 		switch (get<4>(mpEs[i]))
 		{
-		case Edge_tag::R: colors_num[0]++;  break;// break; //
+		case Edge_tag::R: colors_num[0]++;  break;
 		case Edge_tag::B: colors_num[1]++;  break;
-		case Edge_tag::D: colors_num[2]++;  break; //break; 
-		case Edge_tag::H: colors_num[3]++; break; //break; 
+		case Edge_tag::D: colors_num[2]++;  break;
+		case Edge_tag::H: colors_num[3]++; break;
 		default: throw std::runtime_error("stuck at a invalid color!");
 		}
 	}
@@ -1448,35 +1299,6 @@ void MultiResolutionHierarchy::init_edge_tagging3D()
 		default: throw std::runtime_error("stuck at a invalid color!");
 		}
 	}
-
-	//write_edge_coloring_TXT(E_colrs, "C:/xgao/meshing/notes/files_figure/teaser_edge_colors.txt");
-}
-void MultiResolutionHierarchy::printout_sim_step(std::vector<uint32_t> &fs, uint32_t id) {
-	MatrixXf mPVs_(3, Reverse_pV_map.size());
-	mPVs_.setZero();
-
-	for (uint32_t i = 0; i< Reverse_pV_map.size(); i++) {
-		if (Reverse_pV_map[i].empty())
-			continue;
-		for (uint32_t j = 0; j < Reverse_pV_map[i].size(); j++)
-		{
-			mPVs_.col(i) += mO_copy.col(Reverse_pV_map[i][j]);
-			//mPVs_.col(i) += mV[0].col(Reverse_pV_map[i][j]);
-		}
-		mPVs_.col(i) /= Reverse_pV_map[i].size();
-	}
-	std::vector<std::vector<uint32_t>> mFF(fs.size());
-	for (uint32_t f = 0; f<fs.size(); f++){
-		std::vector<uint32_t> vs(mpFvs[fs[f]].size());
-		for (uint32_t j = 0; j<mpFvs[fs[f]].size(); j++)
-			vs[j] = pV_map[mpFvs[fs[f]][j]];
-		mFF[f] = vs;
-	}
-
-	char path[300];
-	sprintf(path, "%s%d%s", "../datasets/volume/out_sequenceS", id, ".vtk");
-	write_surface_mesh_VTK(mPVs_, mFF, path);
-
 }
 void MultiResolutionHierarchy::tagging_collapseTet()
 {
@@ -1597,8 +1419,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 					uint32_t pf0 = mpPs[p][0], pf1 = mpPs[p][1];
 					//update mPPs
 					mpP_flag[p] = false; std::vector<uint32_t>().swap(mpPs[p]);
-					//when both pf0 and pf1 are on boundary, then create a dangling face!//deal with this case later
-					//if (mpF_boundary_flag[pf0] && mpF_boundary_flag[pf1]) continue;
 					//update Reverse_pF_map, boundaryness
 					Reverse_pF_map[pf0].insert(Reverse_pF_map[pf0].end(), Reverse_pF_map[pf1].begin(), Reverse_pF_map[pf1].end());
 					for (uint32_t m = 0; m < Reverse_pF_map[pf1].size(); m++) pF_map[Reverse_pF_map[pf1][m]] = pf0;
@@ -1638,23 +1458,20 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 					if (mpFes[pf0].size() < mpFes[pf12[0]].size()) std::swap(pf0, pf12[0]);
 					if (mpFes[pf0].size() < mpFes[pf12[1]].size()) std::swap(pf0, pf12[1]);
 					if (mpFvs[pf0].size() + 2 != (mpFvs[pf12[0]].size() + mpFvs[pf12[1]].size())) {
-						continue; //heuristic to exclude corner cases, need to improve further!
+						continue; 
 					}
 					if (PF_npps[pf0].size() == 2 && PF_npps[pf12[0]].size() == 2) {
 						if (PF_npps[pf0][0] > PF_npps[pf0][1]) std::swap(PF_npps[pf0][0], PF_npps[pf0][1]);
 						if (PF_npps[pf12[0]][0] > PF_npps[pf12[0]][1]) std::swap(PF_npps[pf12[0]][0], PF_npps[pf12[0]][1]);
-						//if (PF_npps[pf0][0] == PF_npps[pf12[0]][0] && PF_npps[pf0][1] == PF_npps[pf12[0]][1]) continue;
 						if (PF_npps[pf0][0] == PF_npps[pf12[0]][0] && PF_npps[pf0][1] == PF_npps[pf12[0]][1]) std::swap(pf12[1], pf0);
 					}
 					if (PF_npps[pf0].size() == 2 && PF_npps[pf12[1]].size() == 2) {
 						if (PF_npps[pf0][0] > PF_npps[pf0][1]) std::swap(PF_npps[pf0][0], PF_npps[pf0][1]);
 						if (PF_npps[pf12[1]][0] > PF_npps[pf12[1]][1]) std::swap(PF_npps[pf12[1]][0], PF_npps[pf12[1]][1]);
-						//if (PF_npps[pf0][0] == PF_npps[pf12[1]][0] && PF_npps[pf0][1] == PF_npps[pf12[1]][1]) continue;
 						if (PF_npps[pf0][0] == PF_npps[pf12[1]][0] && PF_npps[pf0][1] == PF_npps[pf12[1]][1]) std::swap(pf12[0], pf0);
 					}
 
 					mpP_flag[p] = false; std::vector<uint32_t>().swap(mpPs[p]);
-					//when pf0 and one of the two pf12 are on boundary, then create a dangling face!
 					for (uint32_t j = 0; j<2; j++)
 						if (mpF_boundary_flag[pf0] && mpF_boundary_flag[pf12[j]]) {
 							//PE_npfs
@@ -1797,14 +1614,12 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 				if (common_es.size() != 1) continue;
 				if (once) {
 					if (mpF_boundary_flag[f_sets[j][0]] && std::get<4>(mpEs[common_es[0]]) != Edge_tag::D) continue;
-					//if (mpFes[f_sets[j][0]].size() != 3 || mpFes[f_sets[j][1]].size() != 3)continue;;// 
-					//std::cout << "f0 " << mpFes[f_sets[j][0]].size() << " f1 " << mpFes[f_sets[j][1]].size() << endl;
 				}
 				else {
 					if (std::get<4>(mpEs[common_es[0]]) != Edge_tag::D)
 						continue;
 				}
-				//if e == D judge is_simple_polygon?
+				//if e == D judge is_simple_polygon
 				std::vector<std::vector<uint32_t>> fv_sets(2), fe_sets(2);
 				std::vector<uint32_t> poly_vs, poly_es, vs_disgard, es_disgard;
 				fv_sets[0] = mpFvs[f_sets[j][0]]; fv_sets[1] = mpFvs[f_sets[j][1]];
@@ -1897,27 +1712,22 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 				if (on_p_boundary) { Heid = candidate_es[j]; break; }
 			}
 		};
-		//std::cout << "Iteration: " << iteration << endl;
 		iteration++;
 		topology = false;
 		int size_pool = Es_red.size();
-		//std::cout << size_pool << endl;
 		std::vector<tuple_E> Es_nonmanifold;
 		for (uint32_t i = 0; i < size_pool; i++) {
 			tuple_E e = Es_red.top(); Es_red.pop();
 			uint32_t e_map = pE_map[std::get<5>(e)];
 
 			if (e_map == INVALID_E) { 
-				//std::cout << "INVALID_E" << endl; 
 				continue; }
 
 			if (std::get<7>(e) < E_TimeStamp[e_map]) continue;
 
 			if (!PE_npfs[e_map].size()) { 
-				//std::cout << "0 npfs" << endl; 
 				continue; }
 			if (std::get<4>(e) == std::get<4>(mpEs[e_map])) { 
-				//std::cout << "same color" << endl; 
 				continue; }
 			if (std::get<4>(mpEs[e_map]) != Edge_tag::B) {
 				continue;
@@ -1926,9 +1736,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 			uint32_t v0 = std::get<0>(e), v1 = std::get<1>(e);
 			uint32_t v0_map = pV_map[v0], v1_map = pV_map[v1];
 			if (v0_map == v1_map) { std::cout << "somewhere is wrong" << endl; system("PAUSE"); }
-
-				//std::cout << "e_map: " << e_map << " v0: " << v0_map << " v1: " << v1_map << endl;
-				//std::cout << "Color: " << std::get<4>(e) << endl;
 
 			std::vector<uint32_t> pf_test(0);
 			if (std::get<4>(e) == Edge_tag::H || std::get<4>(e) == Edge_tag::D) {
@@ -1960,14 +1767,9 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 							uint32_t eid = mpFes[fid][j];
 							if (std::get<4>(mpEs[eid]) == Edge_tag::D) sides.push_back(std::get<6>(mpEs[eid]));
 						}
-						//if some faces with at least two edges are D, then these faces should be removed
 						if (sides.size() < 2) continue;
 						short which_side = sides[0]; bool pass = false;
 						for (uint32_t m = 1; m < sides.size();m++) if (which_side != sides[m]) { pass = true; break; }
-						//if (!pass) continue;
-						//if (mpFes[fid].size() != 3) continue;
-						//if (n_D == 2 && mpFes[fid].size() != 3) continue;
-						//if (n_D == 2 && !once) continue;
 						std::vector<std::vector<uint32_t>> pfs(2);
 						for (uint32_t j = 0; j < PF_npps[fid].size(); j++)
 							pfs[j] = mpPs[PF_npps[fid][j]];
@@ -1991,7 +1793,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 				if (mV_B_flag[v0_map] && mV_B_flag[v1_map] && !std::get<2>(mpEs[e_map])) {
 					std::get<3>(e) *= 2;
 					Es_nonmanifold.push_back(e);
-					//std::cout << "pinching forbiden" << endl;
 					continue;
 				}
 				std::sort(PV_npfs[v0_map].begin(), PV_npfs[v0_map].end());
@@ -2002,14 +1803,12 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 				if (common_fs.size() != PE_npfs[e_map].size()){
 					std::get<3>(e) *= 2;
 					Es_nonmanifold.push_back(e);
-					//std::cout << "not equal faces" << endl;
 					continue;
 				}
 				int genus_pre = -1, genus_aft = -1; bool manifoldness_aft = true;
 
 				std::function<bool(std::vector<std::vector<uint32_t>> &, std::vector<std::vector<uint32_t>> &)> check_pre = [&](
 					std::vector<std::vector<uint32_t>> &pFes_local, std::vector<std::vector<uint32_t>> &pPPs_local) -> bool {
-					//Euler characteristics = V + F - E - H
 					for (uint32_t i = 0; i < pFes_local.size(); i++) {
 						for (uint32_t j = 0; j < pFes_local[i].size(); j++) {
 							mpE_flag[pFes_local[i][j]] = true;
@@ -2032,8 +1831,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 				
 				std::function<bool(std::vector<std::vector<uint32_t>> &, std::vector<bool> &, std::vector<std::vector<uint32_t>> &)> check_aft = [&](
 					std::vector<std::vector<uint32_t>> &pFes_local, std::vector<bool> &pF_boundaryness, std::vector<std::vector<uint32_t>> &pPPs_local) -> bool {
-					//check genus, manifoldness
-					//Euler characteristics = V + F - E - H
 					for (uint32_t i = 0; i < pFes_local.size(); i++) {
 						for (uint32_t j = 0; j < pFes_local[i].size(); j++) {
 							mpE_flag[pFes_local[i][j]] = true;
@@ -2082,11 +1879,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 					for (uint32_t i = 0; i < pFes_local.size(); i++) for (uint32_t j = 0; j < pFes_local[i].size(); j++) PE_npfs_sudo[pFes_local[i][j]].clear();
 					if (!manifoldness_aft) return false;
 
-					////check the simplicity of the big sphere
-					//std::vector<std::vector<uint32_t>> pfes; pfes.reserve(f_nts.size() / 2);
-					//for (uint32_t i = 0; i < f_nts.size(); i++) if (f_nts[i].size() == 1) pfes.push_back(pFes_local[i]);
-					//if (!simple_polyhedral_v2(pfes))
-					//	return false;
 					//check duplicated es
 					std::sort(es_local.begin(), es_local.end());
 					for (uint32_t i = 0; i < es_local.size(); ++i)
@@ -2108,7 +1900,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 						if (!simple_polygon_3D(fv_sets, fe_sets, poly_vs, poly_es, vs_disgard, es_disgard, false))
 							return false;
 					}
-					//check the simplicity of polyhedra.
 					//check duplicated fs
 					std::vector<std::vector<uint32_t>> pFvs_local(pFes_local.size());
 					for (uint32_t i = 0; i < pFes_local.size(); i++) {
@@ -2139,14 +1930,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 
 					fs_total.insert(fs_total.end(), PV_npfs[v1_map].begin(), PV_npfs[v1_map].end());
 
-					//if (iteration == 4586 && ((v0_map == 925 && v1_map == 554) || (v0_map == 554 && v1_map == 925))) {//&& e_map == 18200) {//
-
-					//	std::vector<uint32_t> pfsall = fs_total, psall = ps_total, pfsall_, psall_;
-					//	pfsall.insert(pfsall.end(), PV_npfs[539].begin(), PV_npfs[539].end());
-					//	std::sort(pfsall.begin(), pfsall.end()); pfsall.erase(std::unique(pfsall.begin(), pfsall.end()), pfsall.end());
-					//	fs_total = pfsall;
-					//}
-
 					for (uint32_t j = 0; j < fs_total.size(); j++) ps_total.insert(ps_total.end(), PF_npps[fs_total[j]].begin(), PF_npps[fs_total[j]].end());
 					std::sort(ps_total.begin(), ps_total.end()); ps_total.erase(std::unique(ps_total.begin(), ps_total.end()), ps_total.end());
 
@@ -2168,15 +1951,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 					for (uint32_t j = 0; j < ps_total.size(); j++)
 						for (uint32_t k = 0; k < mpPs[ps_total[j]].size(); k++)
 							pPPs_local[j].push_back(F_mapping[mpPs[ps_total[j]][k]]);
-
-					//if (iteration == 6421 && ((v0_map == 3183 && v1_map == 75) || (v0_map == 75 && v1_map == 3183))) {//&& e_map == 18200) {//
-
-					//	printout_sim_step(fs_total, iteration);
-					//	char path[300];
-					//	std::cout << "e_map: " << e_map << " v0: " << v0_map << " v1: " << v1_map << endl;
-					//	sprintf(path, "%s%d%s", "../datasets/volume/out_sequenceSP_", iteration, ".vtk");
-					//	write_surface_mesh_VTK(mV_tag, pPPs_local, path);
-					//}
 
 					//genus before
 					check_pre(pFes_local, pPPs_local);
@@ -2230,10 +2004,9 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 						std::vector<uint32_t> ecom_fs;
 						std::set_intersection(PE_npfs[eeid0].begin(), PE_npfs[eeid0].end(), PE_npfs[eeid1].begin(), PE_npfs[eeid1].end(), std::back_inserter(ecom_fs));
 						if (ecom_fs.size() > 1) { 
-							//std::cout << "two es share two fs!" << endl; 
 							pass_check = false; break; }
 						else if (ecom_fs.size()) {
-							uint32_t fid = ecom_fs[0]; if (pFes_local[F_mapping[fid]].size() != 2) { std::cout << "f shared by three es has more than 3 es, wired!!!" << endl; pass_check = false; break; }
+							uint32_t fid = ecom_fs[0]; if (pFes_local[F_mapping[fid]].size() != 2) { pass_check = false; break; }
 							//merge e0 and e1 -> e0; remove e1 from pFes_local 
 							for (uint32_t k = 0; k < PE_npfs[eeid1].size(); k++) {
 								uint32_t nfid = PE_npfs[eeid1][k]; std::replace(pFes_local[F_mapping[nfid]].begin(), pFes_local[F_mapping[nfid]].end(), eeid1, eeid0);
@@ -2256,14 +2029,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 							std::sort(pps1.begin(), pps1.end()); pps1.erase(std::unique(pps1.begin(), pps1.end()), pps1.end());
 							std::set_intersection(pps0.begin(), pps0.end(), pps1.begin(), pps1.end(), std::back_inserter(ecom_ps));
 							if (ecom_ps.size() != 1) { 
-								//std::cout << "two es share not one p!" << ecom_ps.size()<< endl;
-								//std::cout << "e_map: " << e_map << " v0: " << v0_map << " v1: " << v1_map << endl;
-								//printout_sim_step(fs_total, iteration);
-								//char path[300];
-								//sprintf(path, "%s%d%s", "../datasets/volume/out_sequenceSP_", iteration, ".vtk");
-								//write_surface_mesh_VTK(mV_tag, pPPs_local, path);
-
-								//system("PAUSE");
 								pass_check = false; break; 
 							}
 							//cut the polyhedral into two
@@ -2277,7 +2042,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 							for (uint32_t k = 0; k < mpP_flag.size(); k++) 
 								if (!mpP_flag[k]) { newId = k; mpP_flag[k] = true; P_mapping[k] = pPPs_local.size(); newIds.push_back(k); ps_total.push_back(k); break; }
 							if (newId == -1) { pass_check = false; 
-							//cout << "hope can be collapsed later: " <<v0_map<<" "<<v1_map<< endl;
 							break; }
 							//update neighborhood info
 							P_flag_local.push_back(true); pPPs_local[p] = ps0;  pPPs_local.push_back(ps1);
@@ -2324,19 +2088,19 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 								if (pFes_local[pf0].size() < pFes_local[pf12[1]].size()) std::swap(pf0, pf12[1]);
 
 								if (pFes_local[pf0].size() + 2 != (pFes_local[pf12[0]].size() + pFes_local[pf12[1]].size())) {
-									continue;//heuristic to exclude corner cases, need to improve further!
+									continue;
 								}
 
 								if (PF_npps_sudo[fs_total[pf0]].size() == 2 && PF_npps_sudo[fs_total[pf12[0]]].size() == 2) {
 									if (PF_npps_sudo[fs_total[pf0]][0] > PF_npps_sudo[fs_total[pf0]][1]) std::swap(PF_npps_sudo[fs_total[pf0]][0], PF_npps_sudo[fs_total[pf0]][1]);
 									if (PF_npps_sudo[fs_total[pf12[0]]][0] > PF_npps_sudo[fs_total[pf12[0]]][1]) std::swap(PF_npps_sudo[fs_total[pf12[0]]][0], PF_npps_sudo[fs_total[pf12[0]]][1]);
-									//if (PF_npps[pf0][0] == PF_npps[pf12[0]][0] && PF_npps[pf0][1] == PF_npps[pf12[0]][1]) continue;
+									
 									if (PF_npps_sudo[fs_total[pf0]][0] == PF_npps_sudo[fs_total[pf12[0]]][0] && PF_npps_sudo[fs_total[pf0]][1] == PF_npps_sudo[fs_total[pf12[0]]][1]) std::swap(pf12[1], pf0);
 								}
 								if (PF_npps_sudo[fs_total[pf0]].size() == 2 && PF_npps_sudo[fs_total[pf12[1]]].size() == 2) {
 									if (PF_npps_sudo[fs_total[pf0]][0] > PF_npps_sudo[fs_total[pf0]][1]) std::swap(PF_npps_sudo[fs_total[pf0]][0], PF_npps_sudo[fs_total[pf0]][1]);
 									if (PF_npps_sudo[fs_total[pf12[1]]][0] > PF_npps_sudo[fs_total[pf12[1]]][1]) std::swap(PF_npps_sudo[fs_total[pf12[1]]][0], PF_npps_sudo[fs_total[pf12[1]]][1]);
-									//if (PF_npps[pf0][0] == PF_npps[pf12[0]][0] && PF_npps[pf0][1] == PF_npps[pf12[0]][1]) continue;
+									
 									if (PF_npps_sudo[fs_total[pf0]][0] == PF_npps_sudo[fs_total[pf12[1]]][0] && PF_npps_sudo[fs_total[pf0]][1] == PF_npps_sudo[fs_total[pf12[1]]][1]) std::swap(pf12[0], pf0);
 								}
 
@@ -2402,18 +2166,12 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 						return false;
 					return true;
 				};
-
-				Timer<> timer_topo;
-
+				
 				if (!check_topology()) {
 					std::get<3>(e) *= 2;
 					Es_nonmanifold.push_back(e);
-
-					topo_check_time += timer_topo.value();
-
 					continue;
 				}
-				topo_check_time += timer_topo.value();
 
 				std::get<4>(mpEs[e_map]) = Edge_tag::R;
 				for (uint32_t j = 0; j < Reverse_pE_map[e_map].size(); j++) pE_map[Reverse_pE_map[e_map][j]] = INVALID_E;
@@ -2511,7 +2269,7 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 
 						//delete e1
 						std::vector<uint32_t>().swap(Reverse_pE_map[e1]);
-						std::vector<uint32_t>().swap(PE_npfs[e1]); //pE_map[e1] = INVALID_E;
+						std::vector<uint32_t>().swap(PE_npfs[e1]);
 						//delete fid
 						std::vector<uint32_t>().swap(mpFvs[fid]);
 						std::vector<uint32_t>().swap(mpFes[fid]);
@@ -2558,7 +2316,7 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 						PE_npfs[eeid0].erase(std::unique(PE_npfs[eeid0].begin(), PE_npfs[eeid0].end()), PE_npfs[eeid0].end());
 						//delete eeid
 						std::vector<uint32_t>().swap(Reverse_pE_map[eeid1]);
-						std::vector<uint32_t>().swap(PE_npfs[eeid1]); //pE_map[eeid1] = INVALID_E;
+						std::vector<uint32_t>().swap(PE_npfs[eeid1]);
 					}
 				}
 //////////////////////////////////////////////////////////////////////////////
@@ -2589,53 +2347,18 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 
 			if (std::get<4>(e) == Edge_tag::R) {
 				//update V
-				if (doublets) {
-					bool v0_doublet = false, v1_doublet = false;
-					for (auto vid : v0_mapR) if (V_doublets_Flag[vid]) v0_doublet = true;
-					for (auto vid : v1_mapR) if (V_doublets_Flag[vid]) v1_doublet = true;
-					if (v0_doublet && v1_doublet) {
-						std::cout << "both end vs are doublets" << endl;
-						system("PAUSE");
-					}
 
-					if (!v0_doublet && !v1_doublet) {
-						mV_tag.col(v0_map) = (mV_tag.col(v0_map) + mV_tag.col(v1_map)) * 0.5;
-					}
-					else if (v0_doublet) { std::cout << "v0 doublet" << endl; mV_tag.col(v0_map) = mV_tag.col(v1_map); Remove_Doublets_Num++;}
-					else if (v1_doublet) { std::cout << "v1 doublet" << endl; mV_tag.col(v0_map) = mV_tag.col(v0_map); Remove_Doublets_Num++;}
-					if (v0_doublet)  for (auto vid : v0_mapR) V_doublets_Flag[vid] = false;
-					if (v1_doublet)  for (auto vid : v1_mapR) V_doublets_Flag[vid] = false;
+				Vector3f posy; posy.setZero();
+				Quaternion rosy = Quaternion::Zero(), q; q = mQ_copy.col(Reverse_pV_map[v0_map][0]);
+				for (auto rvid : Reverse_pV_map[v0_map]) {
+					posy += mO_copy.col(rvid);
+
+					rosy = (rosy + Quaternion::applyRotation(mQ_copy.col(rvid), q)).normalized();
 				}
-				else {
-					if (Qquadric) {
-						Vector3f posy; posy.setZero();
-						Quadric quadric; quadric.setZero();
-						Quaternion rosy = Quaternion::Zero(), q; q = mQ_copy.col(Reverse_pV_map[v0_map][0]);
-						for (auto rvid : Reverse_pV_map[v0_map]) {
-							quadric += Quadric_copy[rvid];
+				posy /= Reverse_pV_map[v0_map].size();
 
-							rosy = (rosy + Quaternion::applyRotation(mQ_copy.col(rvid), q)).normalized();
-						}
-						newQu3D[v0_map] = quadric;
-						newQu3D[v0_map].getMinimum(posy);
-
-						mV_tag.col(v0_map) = posy;
-						newQ.col(v0_map) = rosy.normalized();
-					}
-					else {
-						Vector3f posy; posy.setZero();
-						Quaternion rosy = Quaternion::Zero(), q; q = mQ_copy.col(Reverse_pV_map[v0_map][0]);
-						for (auto rvid : Reverse_pV_map[v0_map]) {
-							posy += mO_copy.col(rvid);
-
-							rosy = (rosy + Quaternion::applyRotation(mQ_copy.col(rvid), q)).normalized();
-						}
-						posy /= Reverse_pV_map[v0_map].size();
-
-						mV_tag.col(v0_map) = posy;
-						newQ.col(v0_map) = rosy.normalized();
-					}
-				}
+				mV_tag.col(v0_map) = posy;
+				newQ.col(v0_map) = rosy.normalized();
 
 				pV_npes[v0_map].insert(pV_npes[v0_map].end(), pV_npes[v1_map].begin(), pV_npes[v1_map].end());
 				std::vector<uint32_t>().swap(pV_npes[v1_map]);
@@ -2655,19 +2378,14 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 					uint32_t v0_ = pV_map[std::get<0>(mpEs[eid])], v1_ = pV_map[std::get<1>(mpEs[eid])];
 					const Vector3f o0 = mV_tag.col(v0_), o1 = mV_tag.col(v1_);
 					Float energy = (o0 - o1).norm();
-					//std::get<3>(e_) = energy;
 					std::get<0>(e_) = v0_; std::get<1>(e_) = v1_; std::get<2>(e_) = std::get<2>(mpEs[eid]);
 					std::get<5>(e_) = eid; std::get<7>(e_) = ++E_TimeStamp[eid];
-					//majority voting for eid color 
 					Quaternion q0, q1, n0, n1; std::vector<uint32_t> votes(4, 0);
 					for (auto eo : Reverse_pE_map[eid]) {
 						uint32_t v0_o = std::get<0>(mpEs[eo]), v1_o = std::get<1>(mpEs[eo]), v0_om = pV_map[v0_o], v1_om = pV_map[v1_o];
 						q0 = newQ.col(v0_o), q1 = newQ.col(v1_o);
 						Quaternion q_next = Quaternion::applyRotation(q1, q0);
-						//std::pair<short, short> a_pair = assignColorBiased(mV_tag.col(v0_om), q0, mV_tag.col(v1_om), q_next, mScale, mInvScale);
-
 						std::pair<int, Float> a_pair = assignColorWeighted3D(mV_tag.col(v0_om), q0, mV_tag.col(v1_om), q_next, mScale, mInvScale);
-						//std::get<4>(mpEs[i]) = a_pair.first;
 						std::get<3>(e_) = a_pair.second;
 
 						votes[std::get<0>(a_pair)]++; std::get<6>(e_) = std::get<1>(a_pair);
@@ -2684,35 +2402,22 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 			break;
 		}
 
-		for (uint32_t j = 0; j < mpF_boundary_flag.size(); j++)
-			if (mpF_boundary_flag[j] && mpFes[j].size())
-				for (uint32_t k = 0; k < mpFes[j].size(); k++) {
-
-					if (!std::get<2>(mpEs[mpFes[j][k]])) {
-						std::cout << "inconsistent here!" << endl;
-						system("PAUSE");
-					}
-				}
 		for (uint32_t i = 0; i < Es_nonmanifold.size(); i++)
 			Es_red.push(Es_nonmanifold[i]);
 
 		if ((!topology || Es_red.empty())) {
 			topology = true;
 			once = true;
-			//std::cout << "enter post-processing" << endl;
-
 			std::vector<uint32_t> PPs_ring_set;
 
 			std::vector<uint32_t> all_fs; all_fs.reserve(mpFes.size());
 			for (uint32_t i = 0; i < mpFes.size(); ++i) if (mpFes[i].size()) all_fs.push_back(i);
 			
 			while (edge_fuse_polygons(all_fs, PPs_ring_set));
-			//std::cout << "remove degenerate polyhedrals" << endl;
 			std::sort(PPs_ring_set.begin(), PPs_ring_set.end()); PPs_ring_set.erase(std::unique(PPs_ring_set.begin(), PPs_ring_set.end()), PPs_ring_set.end());
 			degenerate_polyhedra(PPs_ring_set); if (!PPs_ring_set.size()) once=false;
 
 			std::fill(E_TimeStamp.begin(), E_TimeStamp.end(), 0);
-			//std::cout << "tag existing edges" << endl;
 			while (Es_red.size()) {
 				tuple_E e = Es_red.top(); Es_red.pop();
 				std::get<4>(mpEs[std::get<5>(e)]) = std::get<4>(e);
@@ -2720,10 +2425,8 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 				std::get<7>(mpEs[std::get<5>(e)]) = E_TimeStamp[std::get<5>(e)];
 			}
 			tuple_E ei;
-			//std::vector<uint32_t> all_fs; all_fs.reserve(mpFes.size());
 			for (uint32_t i = 0; i < mpFes.size(); ++i) {
 				if (mpFes[i].size()) {
-//					all_fs.push_back(i);
 					for (uint32_t j = 0; j < mpFes[i].size(); ++j) {
 						if (mpE_flag[mpFes[i][j]]) continue;
 						if (std::get<4>(mpEs[mpFes[i][j]]) == Edge_tag::R) {
@@ -2750,180 +2453,13 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 						if (heid != INVALID_E) {
 							e = mpEs[heid]; std::get<4>(e) = Edge_tag::H;
 							Es_red_sudo.push(e);
-							//std::cout << "One more H" << endl;
 							once = true;
 						}
 					}
 				}
 				Es_red_sudo.swap(Es_red);
 			}
-			//remove long edges
-			if (triangles) {
-
-
-				//std::cout << "remove skinny traingles" << endl;
-				uint32_t before_add = Es_red.size();
-
-				for (uint32_t i = 0; i < mpFes.size(); i++) {
-					auto &fes = mpFes[i];
-					if (!fes.size()) continue;
-					if (fes.size() != 3) continue;
-					auto &fvs = mpFvs[i];
-					//1. detect a skinny triangle ----> split the longest edge
-
-					//add a new vertex, add PV_npes_sudo, PV_npfs_sudo, PV_npfs, mpV_flag, pV_map, Reverse_pV_map, mV_tag, mV_tag
-					//add two edges, add ...
-					//for all the neighboring skinny triangles, add new edges....
-					//compute colors of all the newly added edges.
-
-				}
-
-
-				for (uint32_t i = 0; i< mpFes.size(); i++) {
-					auto &fes = mpFes[i];
-					if (!fes.size()) continue;
-					if (fes.size() != 3) continue;
-					auto &fvs = mpFvs[i];
-					//orient rosy
-					std::vector<Quaternion> qs(fvs.size()); Quaternion q0 = newQ.col(fvs[0]);
-					qs[0] = q0;
-					for (uint32_t j = 1; j < fvs.size(); j++) qs[j] = Quaternion::applyRotation(newQ.col(fvs[j]), q0);
-					//find the long edge
-					std::vector<uint32_t> b_es; std::vector<Vector3f> lengths; std::vector<short> dirctions;
-					int32_t long_eid = -1; short which_dir = -1;
-					for (auto eid : fes) {
-						uint32_t v0 = std::get<0>(mpEs[eid]), v1 = std::get<1>(mpEs[eid]),
-							v0m = pV_map[v0], v1m = pV_map[v1];
-
-						int32_t pos0, pos1;
-						if (std::find(fvs.begin(), fvs.end(), v0m) != fvs.end())
-							pos0 = std::find(fvs.begin(), fvs.end(), v0m) - fvs.begin();
-						else {
-							std::cout << "cannot find v" << endl;
-							system("PAUSE");
-						}
-						if (std::find(fvs.begin(), fvs.end(), v1m) != fvs.end())
-							pos1 = std::find(fvs.begin(), fvs.end(), v1m) - fvs.begin();
-						else {
-							std::cout << "cannot find v" << endl;
-							system("PAUSE");
-						}
-
-						Quaternion q_v0 = qs[pos0], q_v1 = qs[pos1];
-						std::tuple<short, Float, Vector3f> a_posy = posy3D_completeInfo(mV_tag.col(v0m), q_v0, mV_tag.col(v1m), q_v1, mScale, mInvScale);
-
-						if (std::get<0>(a_posy) != Edge_tag::B) continue;
-						lengths.push_back(std::get<2>(a_posy));
-						b_es.push_back(eid);
-
-						for (uint32_t j = 0; j < 3; j++) {
-							Vector3f len = std::get<2>(a_posy);
-							if (len[j] > 0.5) {
-								dirctions.push_back(j);
-								if (std::round(len[j]) > 1) { long_eid = eid; which_dir = j; break; }
-							}
-						}
-					}
-					if (dirctions.size() != 3) continue;//not all the three edges are blue
-					if (dirctions[0] != dirctions[1] || dirctions[0] != dirctions[2] || dirctions[1] != dirctions[2]) continue;//for triangle
-					if (long_eid == -1) {
-						Float largest_length = 0;
-						for (uint32_t j = 0; j < lengths.size(); j++) {
-							Float cur_len = 0;
-							for (uint32_t k = 0; k < 3; k++) if (lengths[j][k] > 0.5)cur_len = lengths[j][k];
-							if (largest_length < cur_len) { largest_length = cur_len; long_eid = b_es[j];}
-						}	
-						which_dir = dirctions[0];
-						//continue;
-					}
-					{
-						//find all the blue edges neighboring this long edge, whether they are in the same direction
-						uint32_t v0m = pV_map[std::get<0>(mpEs[long_eid])], v1m = pV_map[std::get<1>(mpEs[long_eid])];
-						for (uint32_t j = 0; j < b_es.size(); j++) {
-							uint32_t eid = b_es[j];
-							if (eid == long_eid || dirctions[j] != which_dir) continue;
-
-							uint32_t v0 = std::get<0>(mpEs[eid]), v1 = std::get<1>(mpEs[eid]),
-								v0m_cur = pV_map[v0], v1m_cur = pV_map[v1];
-							if (!(v0m_cur == v0m || v1m_cur == v0m || v0m_cur == v1m || v1m_cur == v1m)) continue;
-							//tag all the other short edges as red
-							Float weight = 0;
-							for (int k = 0; k < 3; k++) weight += lengths[j][k] * lengths[j][k];
-
-							tuple_E ei;
-							std::get<3>(ei) = weight;
-
-							bool contain_triangle_neighbors = false;
-							for(auto fid: PE_npfs[eid]) if(mpFes[fid].size() == 3) std::get<3>(ei) = weight/2;
-
-							std::get<0>(ei) = v0m_cur; std::get<1>(ei) = v1m_cur; std::get<2>(ei) = std::get<2>(mpEs[eid]);
-							std::get<5>(ei) = eid;
-							E_TimeStamp[eid]++;
-							std::get<7>(ei) = E_TimeStamp[eid];
-							std::get<4>(ei) = Edge_tag::R;
-
-							Es_red.push(ei);
-
-							once = true;
-						}
-					}
-				}
-				std::cout << "added red edges: " << Es_red.size() - before_add << endl;
-			}
-
-			if (doublets) {
-				std::cout << "remove point doublets" << endl;
-				std::fill(V_doublets_Flag.begin(), V_doublets_Flag.end(), false);
-				pV_npes.clear(); pV_npes.resize(mV_tag.cols());
-				for (uint32_t i = 0; i < mpFes.size(); ++i) {
-					if (mpFes[i].size()) {
-						for (uint32_t j = 0; j < mpFes[i].size(); ++j) {
-							tuple_E e = mpEs[mpFes[i][j]];
-							uint32_t v0 = pV_map[std::get<0>(e)], v1 = pV_map[std::get<1>(e)];
-							pV_npes[v0].push_back(mpFes[i][j]);
-							pV_npes[v1].push_back(mpFes[i][j]);
-						}
-					}
-				}
-				for (uint32_t i = 0; i < pV_npes.size(); i++) {
-					if (!pV_npes[i].size()) continue;
-					std::sort(pV_npes[i].begin(), pV_npes[i].end());
-					pV_npes[i].erase(std::unique(pV_npes[i].begin(), pV_npes[i].end()), pV_npes[i].end());
-
-					if (!Reverse_pV_map[i].size()) std::cout << "inconsistent v " << i << endl;
-					std::vector<uint32_t> es_mapped;
-					for (auto eid : pV_npes[i]) if (pE_map[eid] != INVALID_E) es_mapped.push_back(pE_map[eid]);
-					std::sort(es_mapped.begin(), es_mapped.end()); es_mapped.erase(std::unique(es_mapped.begin(), es_mapped.end()), es_mapped.end());
-					if (es_mapped.size() == 2) {
-						std::cout << "doublet v " << i << endl;
-						V_doublets_Flag[i] = true;
-					}
-					//if (es_mapped.size() == 3) {
-					//	bool all_internal = true;
-					//	for (auto eid : es_mapped)if (std::get<2>(mpEs[eid])) all_internal = false;
-					//	if (all_internal) {
-					//		std::cout << "doublet v " << i << endl;
-					//		V_doublets_Flag[i] = true;
-					//	}
-					//}
-				}
-				for (auto e : mpEs) {
-					uint32_t eid_map = pE_map[std::get<5>(e)];
-					if (eid_map == INVALID_E || !PE_npfs[eid_map].size())continue;
-					uint32_t v0 = pV_map[std::get<0>(e)], v1 = pV_map[std::get<1>(e)];
-					if ((V_doublets_Flag[v0] && !V_doublets_Flag[v1]) ||
-						(!V_doublets_Flag[v0] && V_doublets_Flag[v1])) {
-						if (E_TimeStamp[eid_map] != 0) continue;//added already
-						E_TimeStamp[eid_map]++;
-						std::get<7>(e) = E_TimeStamp[eid_map];
-						std::get<4>(e) = Edge_tag::R;
-						Es_red.push(e);
-
-						std::cout << "added point doublets removal, mapped Eid: " << eid_map << endl;
-					}
-				}
-			}
-
+			
 			uint32_t cur_num = 0;
 			for (auto fes : mpFes) if (fes.size()) cur_num++;
 			if (left_NUM == cur_num) {
@@ -2933,11 +2469,9 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 			//
 			if (!once) {
 				topology = false; 
-				//std::cout << "once false, topology false..." << endl;
 				left_NUM = 0;
 				break;
 			}
-			//std::cout << "start removing dashed edges..." << Es_red.size() << endl;
 		}
 	}
 	std::set<tuple_E> lefted_es;
@@ -2950,8 +2484,6 @@ void MultiResolutionHierarchy::tagging_collapseTet()
 		std::get<4>(mpEs[std::get<5>(e)]) = std::get<4>(e);
 		lefted_es.insert(e);
 	}
-	//std::cout << iteration << " edge removal performed" << endl;
-	//std::cout << lefted_es.size() << " remaining" << endl;
 }
 
 bool MultiResolutionHierarchy::split_long_edge3D(vector<uint32_t> &ledges) {
@@ -2960,7 +2492,6 @@ bool MultiResolutionHierarchy::split_long_edge3D(vector<uint32_t> &ledges) {
 	uint32_t Ne = mpEs.size(), Nf = mpFvs.size();
 	mQ_copy.conservativeResize(4, Nv);
 	mO_copy.conservativeResize(3, Nv);
-	//mN_copy.conservativeResize(4, Nv);
 	if(Qquadric)
 		Quadric_copy.resize(Nv);
 
@@ -2970,8 +2501,6 @@ bool MultiResolutionHierarchy::split_long_edge3D(vector<uint32_t> &ledges) {
 	PV_npvs.resize(Nv);
 
 	for (auto e_pos : ledges) {
-
-		//cout << "split edge " << e_pos << endl;
 
 		tuple_E e = mpEs[e_pos]; uint32_t eid = get<5>(e);
 
@@ -3052,7 +2581,6 @@ bool MultiResolutionHierarchy::split_long_edge3D(vector<uint32_t> &ledges) {
 				Quaternion q_test = Quaternion::applyRotation(mQ_copy.col(vid), qn);
 				a_posy = posy3D_completeInfo(gn, qn, mO_copy.col(vid), q_test, mScale, mInvScale);
 
-				//if (get<0>(a_posy) != Edge_tag::R) continue;
 				fids.push_back(fid); vposs.push_back(k);
 				break;
 			}
@@ -3097,7 +2625,6 @@ bool MultiResolutionHierarchy::split_long_edge3D(vector<uint32_t> &ledges) {
 			if (Ne > mpEs.size()) {
 				mpEs.resize(std::max(Ne, (uint32_t)mpEs.size() * 2));
 				PE_npfs.resize(mpEs.size());
-				//mpV_flag.resize(mpEs.size(), false);
 				mpE_flag.resize(mpEs.size(), false);
 			}
 			mpEs[en] = new_e;
@@ -3118,14 +2645,13 @@ bool MultiResolutionHierarchy::split_long_edge3D(vector<uint32_t> &ledges) {
 				fes_simple_test.push_back(nes);
 				vector<uint32_t> pvs, pes, vs_disgard, es_disgard;
 				if (!simple_polygon_3D_v2(fvs_simple_test, fes_simple_test, pvs, pes, vs_disgard, es_disgard, false))
-					;//cout << "not simple polygon" << endl;
+					;
 
 				nes2[m] = nes; nvs2[m] = nvs;
 			}
 			bool this_one = true;
 			//simple polyhedral
 			for (auto pid : PF_npps[fid]) {
-				//cout << "testing " << endl;
 				std::vector<std::vector<uint32_t>> pfes;
 				for (uint32_t n = 0; n < mpPs[pid].size(); n++) {
 					if(mpPs[pid][n] != fid) pfes.push_back(mpFes[mpPs[pid][n]]);
@@ -3138,7 +2664,6 @@ bool MultiResolutionHierarchy::split_long_edge3D(vector<uint32_t> &ledges) {
 			}
 
 			if (!this_one) {
-				//cout << "not manifold" << endl;
 				tuple_E e_ran;
 				mpEs[en] = e_ran;
 				Ne--;
@@ -3227,7 +2752,7 @@ bool MultiResolutionHierarchy::split_face3D(bool red_edge) {
 					start = j;
 					end = k;
 					break;
-				}else if (!((k - j + vs.size() + 1) % vs.size() < 4 || (j - k + vs.size() + 1) % vs.size() < 4)) {// && get<0>(a_posy) == Edge_tag::B) {
+				}else if (!((k - j + vs.size() + 1) % vs.size() < 4 || (j - k + vs.size() + 1) % vs.size() < 4)) {
 					Float cost = compute_cost_edge3D(vs[j], vs[k]);
 					es_rank.push_back(std::make_tuple(cost, j, k));
 				}
@@ -3280,7 +2805,7 @@ bool MultiResolutionHierarchy::split_face3D(bool red_edge) {
 			fes_simple_test.push_back(nes);
 			vector<uint32_t> pvs, pes, vs_disgard, es_disgard;
 			if (!simple_polygon_3D_v2(fvs_simple_test, fes_simple_test, pvs, pes, vs_disgard, es_disgard, false))
-				cout << "not simple polygon" << endl;
+				;
 
 			nes2[m] = nes; nvs2[m] = nvs;
 		}
@@ -3288,7 +2813,6 @@ bool MultiResolutionHierarchy::split_face3D(bool red_edge) {
 		bool this_one = true;
 		//simple polyhedral
 		for (auto pid : PF_npps[i]) {
-			//cout << "testing " << endl;
 			std::vector<std::vector<uint32_t>> pfes;
 			for (uint32_t n = 0; n < mpPs[pid].size(); n++) {
 				if (mpPs[pid][n] != i) pfes.push_back(mpFes[mpPs[pid][n]]);
@@ -3301,7 +2825,6 @@ bool MultiResolutionHierarchy::split_face3D(bool red_edge) {
 		}
 
 		if (!this_one) {
-			//cout << "not manifold" << endl;
 			tuple_E e_ran;
 			mpEs[en] = e_ran;
 			Ne--;
@@ -3326,26 +2849,12 @@ bool MultiResolutionHierarchy::split_face3D(bool red_edge) {
 			PF_npps.resize(mpFvs.size());
 			mpF_boundary_flag.resize(mpFvs.size());
 		}
-		//cout << "face i fn"<<i<<" "<<fn << endl;
-		//vector<uint32_t> printfs;
-		//printfs.push_back(i);
-		//printout_elements(printfs, mpFvs, i, 0);
 		mpFvs[i] = nvs2[0];
 		mpFvs[fn] = nvs2[1];
 		mpFes[i] = nes2[0];
 		mpFes[fn] = nes2[1];
 		PF_npps[fn] = PF_npps[i];
 		mpF_boundary_flag[fn] = mpF_boundary_flag[i];
-
-		//printfs[0] = i;
-		//printout_elements(printfs, mpFvs, i, 1);
-		//printfs[0] = fn;
-		//printout_elements(printfs, mpFvs, i, 2);
-
-		//for (auto pid : PF_npps[i]) {
-		//	cout << "pid " << pid << endl;
-		//	printout_elements(mpPs[pid], mpFvs, i, pid);
-		//}
 
 		split_num++;
 	}
@@ -3356,7 +2865,6 @@ bool MultiResolutionHierarchy::split_face3D(bool red_edge) {
 	PF_npps.resize(Nf);
 	mpF_boundary_flag.resize(Nf);
 
-	//cout << "split face# " << split_num << endl;
 	return split_num;
 }
 bool MultiResolutionHierarchy::split_polyhedral3D() {
@@ -3397,7 +2905,6 @@ bool MultiResolutionHierarchy::split_polyhedral3D() {
 			uint32_t v0 = vs[j], v1 = vs[k];
 			Quaternion q0 = mQ_copy.col(v0), q1 = Quaternion::applyRotation(mQ_copy.col(v1), q0);
 			tuple<short, Float, Vector3f> a_posy = posy3D_completeInfo(mO_copy.col(v0), q0, mO_copy.col(v1), q1, mScale, mInvScale);
-			//if (get<0>(a_posy) != Edge_tag::R) continue;
 
 			vector<uint32_t> sharedes, sharedfs;
 			set_intersection(PV_npes_sudo[vs[j]].begin(), PV_npes_sudo[vs[j]].end(), PV_npes_sudo[vs[k]].begin(), PV_npes_sudo[vs[k]].end(), back_inserter(sharedes));
@@ -3432,7 +2939,6 @@ bool MultiResolutionHierarchy::split_polyhedral3D() {
 			vector<vector<uint32_t>> nps(2);
 			vector<vector<uint32_t>> pfes_temp;
 			for (auto fid : fs) pfes_temp.push_back(mpFes[fid]);
-			//cout << "cut_a_polyhedral... "<<i << endl; 			
 			cut_a_polyhedral(fs, pfes_temp, nfes[f.second], nps[0], nps[1]);
 
 			uint32_t fn = Nf++;
@@ -3459,18 +2965,13 @@ bool MultiResolutionHierarchy::split_polyhedral3D() {
 			if (Np > mpPs.size()) {
 				mpPs.resize(std::max(Nf, (uint32_t)mpPs.size() * 2));
 			}
-
-			//printout_elements(mpPs[i], i, 0);
-
+			
 			mpPs[i] = nps[0];
 			mpPs[pn] = nps[1];
 
 			for (auto fid : mpPs[pn]) {
 				if (fid != fn) replace(PF_npps[fid].begin(), PF_npps[fid].end(), i, pn);
 			}
-
-			//printout_elements(mpPs[i], i, 1);
-			//printout_elements(mpPs[pn], i, 2);
 
 			break;
 		}
@@ -3481,7 +2982,6 @@ bool MultiResolutionHierarchy::split_polyhedral3D() {
 	mpF_boundary_flag.resize(Nf);
 	mpF_flag.resize(Nf);
 	mpPs.resize(Np);
-	//cout << "split polyhedra# " << split_num << endl;
 	return split_num;
 }
 void MultiResolutionHierarchy::candidate_loops(vector<uint32_t> &fs, vector<vector<uint32_t>> &nfes, vector<vector<uint32_t>> &nfvs, vector<pair<double, uint32_t>> &fs_rank){
@@ -3508,12 +3008,10 @@ void MultiResolutionHierarchy::candidate_loops(vector<uint32_t> &fs, vector<vect
 			std::vector<uint32_t> fvs, fes, rvs;
 			rvs.push_back(v0[0]); rvs.push_back(v0[1]);
 			rvs.push_back(v1[0]); rvs.push_back(v1[1]);
-			//std::cout << "//start from v0[0]: " << endl;
 			fvs.push_back(v0[0]); fes.push_back(es[i]);
 			if (!recursive_ring(rvs, fvs, fes, v0[0], v1)) continue;
 			std::reverse(fvs.begin(), fvs.end());
 			std::reverse(fes.begin(), fes.end());
-			//std::cout << "//start from v0[1]: " << endl;
 			fvs.push_back(v0[1]);
 			if (!recursive_ring(rvs, fvs, fes, v0[1], v1)) continue;
 			int32_t fid = share_the_same_fs(fes, es[j]);
@@ -3526,7 +3024,6 @@ void MultiResolutionHierarchy::candidate_loops(vector<uint32_t> &fs, vector<vect
 			fes_simple_test.push_back(fes);
 			vector<uint32_t> pvs, pes, vs_disgard, es_disgard;
 			if (!simple_polygon_3D_v2(fvs_simple_test, fes_simple_test, pvs, pes, vs_disgard, es_disgard, false)) {
-				//std::cout << "not simple_polygon_3D" << endl;
 				continue;
 			}
 			Float cost = compute_cost_face3D(fvs, -1, false); ;
@@ -3631,51 +3128,10 @@ Float MultiResolutionHierarchy::compute_cost_edge3D(uint32_t v0, uint32_t v1) {
 	for (uint32_t i = 0; i < 3; i++) {
 		Float cost_i = 0;
 		for (uint32_t j = 0; j < 3; j++) {
-			if (i == j) {// cost_i += (1 - dir[j]) * (1 - dir[j]);
-			}
-			else cost_i += dir[j] * dir[j];
+			if (i != j) cost_i += dir[j] * dir[j];
 		}
 
 		if (cost_i < min_cost) min_cost = cost_i;
 	}
 	return min_cost;
-}
-void MultiResolutionHierarchy::printout_elements(vector<uint32_t> &fs, uint32_t id, uint32_t subid) {
-
-	std::vector<std::vector<uint32_t>> mFF(fs.size());
-	for (uint32_t f = 0; f<fs.size(); f++) {
-		std::vector<uint32_t> vs(mpFvs[fs[f]].size());
-		for (uint32_t j = 0; j<mpFvs[fs[f]].size(); j++)
-			vs[j] = mpFvs[fs[f]][j];
-		mFF[f] = vs;
-	}
-
-	char path[300];
-	sprintf(path, "%s%d%s%d%s", "C:/xgao/hex_meshing/code2/robust_instant_meshing/datasets/out_polyhedral_", id, "_", subid, ".vtk");
-	write_surface_mesh_VTK(mO_copy, mFF, path);
-}
-void MultiResolutionHierarchy::printout_elements(vector<uint32_t> &fs, vector<vector<uint32_t>> &HFs, uint32_t id, uint32_t subid) {
-	std::vector<std::vector<uint32_t>> mFF(fs.size());
-	for (uint32_t f = 0; f<fs.size(); f++) {
-		mFF[f] = HFs[fs[f]];
-	}
-
-	char path[300];
-	sprintf(path, "%s%d%s%d%s", "C:/xgao/hex_meshing/code2/robust_instant_meshing/datasets/out_polyhedral_", id, "_", subid, ".vtk");
-	write_surface_mesh_VTK(mO_copy, mFF, path);
-}
-
-void MultiResolutionHierarchy::printout_sim_step_decompose(std::vector<uint32_t> &fs, uint32_t id, uint32_t subid ){
-
-	std::vector<std::vector<uint32_t>> mFF(fs.size());
-	for (uint32_t f = 0; f<fs.size(); f++) {
-		std::vector<uint32_t> vs(F_tag[fs[f]].size());
-		for (uint32_t j = 0; j<F_tag[fs[f]].size(); j++)
-			vs[j] = pV_map[F_tag[fs[f]][j]];
-		mFF[f] = vs;
-	}
-
-	char path[300];
-	sprintf(path, "%s%d%s%d%s", "C:/xgao/hex_meshing/code2/robust_instant_meshing/datasets/out_polyhedral_", id,"_",subid, ".vtk");
-	write_surface_mesh_VTK(mV_tag, mFF, path);
 }

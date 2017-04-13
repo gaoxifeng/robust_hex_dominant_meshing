@@ -687,8 +687,8 @@ void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,
     proj = frustum(-fW, fW, -fH, fH, mCamera.dnear, mCamera.dfar);
     model = mCamera.arcball.matrix();
 
-    model = scale(model, Eigen::Vector3f::Constant(mCamera.zoom * mCamera.modelZoom));
-    model = translate(model, mCamera.modelTranslation);
+	model = model * scale(Eigen::Vector3f::Constant(mCamera.zoom * mCamera.modelZoom));
+	model = model * translate(mCamera.modelTranslation);
 }
 
 
