@@ -193,13 +193,34 @@ void MultiResolutionHierarchy::smoothPositionsTet(uint32_t l, bool alignment, bo
 
 
 void MultiResolutionHierarchy::prolongPositions(int level) {
-    const SMatrix &P = mP[level];
+    
+	const SMatrix &P = mP[level];
+	for (int k = 0; k < P.outerSize(); ++k) {
+		SMatrix::InnerIterator it(P, k);
+		for (; it; ++it) {
 
-    for (int k = 0; k < P.outerSize(); ++k) {
-        SMatrix::InnerIterator it(P, k);
-        for (; it; ++it)
-            mO[level].col(it.row()) = mO[level+1].col(it.col());
-    }
+			Vector3f o_i = mO[level + 1].col(it.col());;
+			Vector3f q_i = mQ[level].col(it.row());
+			Vector3f v_i = mV[level].col(it.row());
+			Vector3f n_i = mN[level].col(it.row());
+
+			if (!tetMesh()) {
+				if (nV_boundary_flag[level][it.row()]) {
+					o_i = q_i.dot(o_i - v_i) * q_i + v_i;
+				}
+				o_i -= n_i.dot(o_i - v_i) * n_i;
+				mO[level].col(it.row()) = o_i;
+			}
+			else {
+				if (nV_boundary_flag[level][it.row()] && n_i != Vector3f::Zero()) {
+					Vector3f c_i = mC[level].col(it.row());
+					Float dp = n_i.dot(c_i - o_i) * mInvScale;
+					o_i += (dp - std::round(dp)) * n_i * mScale;
+				}
+				mO[level].col(it.row()) = o_i;
+			}
+		}
+	}
 }
 
 void MultiResolutionHierarchy::detectPositionSingularitiesTri() {

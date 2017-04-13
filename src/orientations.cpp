@@ -151,15 +151,28 @@ void MultiResolutionHierarchy::smoothOrientationsTet(uint32_t l, bool alignment,
 }
 
 void MultiResolutionHierarchy::prolongOrientations(int level) {
-    const SMatrix &P = mP[level];
-
-    for (int k = 0; k < P.outerSize(); ++k) {
-        SMatrix::InnerIterator it(P, k);
+	const SMatrix &P = mP[level];
+	const MatrixXf &N = mN[level];
+	for (int k = 0; k < P.outerSize(); ++k) {
+		SMatrix::InnerIterator it(P, k);
 		for (; it; ++it) {
-			if (!tetMesh() && (nV_boundary_flag[level][it.row()])) continue;
-			mQ[level].col(it.row()) = mQ[level + 1].col(it.col());
+			if (!tetMesh()) {
+				if (nV_boundary_flag[level][it.row()]) continue;
+				Vector3f q_j = mQ[level + 1].col(it.col());
+				Vector3f n_i = N.col(it.row());
+				mQ[level].col(it.row()) = q_j - n_i * n_i.dot(q_j);
+			}
+			else {
+				Quaternion q_j = mQ[level + 1].col(it.col());
+				Vector3f n_i = N.col(it.row());
+				if (n_i != Vector3f::Zero()) {
+					Float magnitude = q_j.norm();
+					q_j = Quaternion(q_j / magnitude).align(n_i) * magnitude;
+				}
+				mQ[level].col(it.row()) = q_j;
+			}
 		}
-    }
+	}
 }
 
 void MultiResolutionHierarchy::detectOrientationSingularitiesTri() {
