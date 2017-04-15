@@ -127,6 +127,8 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		}
 
 		mRes.load(filename2);
+		mScaleBox->setValue(mRes.scale());
+
 		filename = filename2;
 		mRes.outpath = filename2;
 		/* Default view setup */
@@ -306,20 +308,7 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		mShow_E_done->setChecked(true);
 	});
 
-    new Label(window, "Slicing plane", "sans-bold");
-    Slider *slider = new Slider(window);
-    mSplit = Vector4f(1.f, 0.f, 0.f, mRes.aabb().center().x());
-    slider->setValue(0.0);
-    auto cb2 = [&](Float value) {
-		float offset = (mRes.aabb().max.x() - mRes.aabb().min.x()) * 0.5;
-        mSplit.w() = -((1-value) * (mRes.aabb().min.x() - offset) + value * (mRes.aabb().max.x() + offset));
-    };
-    cb2(0.0f);
-    slider->setCallback(cb2);
-    slider->setId("slider1");
-
-
-	//Config Layers
+ 	//Config Layers
 	PopupButton *openBtn3 = new PopupButton(window, "Config Layers");
 	auto popup3 = openBtn3->popup();
 	popup3->setLayout(new GroupLayout());
@@ -414,6 +403,58 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 			write_volume_mesh_HYBRID(mRes.mV_tag, mRes.F_tag, mRes.P_tag, mRes.Hex_flag, mRes.PF_flag, patho);
 		}
 	});
+//slicing
+	new Label(window, "Slicing plane", "sans-bold");
+	Slider *slider = new Slider(window);
+	mSplit = Vector4f(1.f, 0.f, 0.f, mRes.aabb().center().x());
+	slider->setValue(0.0);
+	auto cb2 = [&](Float value) {
+		float offset = (mRes.aabb().max.x() - mRes.aabb().min.x()) * 0.5;
+		mSplit.w() = -((1 - value) * (mRes.aabb().min.x() - offset) + value * (mRes.aabb().max.x() + offset));
+
+		if (mShow_F_done->checked() || mShow_E_done->checked()) {
+			if (!mRes.ECs.size()) return;
+			if (!mRes.P_tag.size() && !mRes.F_tag.size()) return;
+			//compute renderable faces
+			std::vector<tuple_E> Es;
+			std::vector<std::vector<uint32_t>> Fs, Fes;
+
+			vector<bool> flag(mRes.ECs.size(), true), flag_F(mRes.F_tag.size(), false);
+			for (uint32_t i = 0; i < mRes.ECs.size(); i++)
+				if (mSplit.dot(mRes.ECs[i]) < 0) flag[i] = false;
+			if (mRes.P_tag.size()) {
+				for (uint32_t i = 0; i < flag.size(); i++)if (flag[i]) {
+					for (auto f : mRes.P_tag[i]) flag_F[f] = !flag_F[f];
+				}
+			}
+			else flag_F = flag;
+			for (uint32_t i = 0; i < flag_F.size(); i++)if (flag_F[i]) {
+				Fs.push_back(mRes.F_tag[i]);
+				Fs.push_back(mRes.F_tag[i]); reverse(Fs[Fs.size() - 1].begin(), Fs[Fs.size() - 1].end());
+			}
+			if (!Fs.size()) return;
+
+			mRes.construct_tEs_tFEs(Fs, Fes, Es);
+			mRes.orient_polygon_mesh(mRes.mV_tag, Fs, Fes, Es);
+			mRes.E_final_rend.setZero();
+			mRes.E_final_rend.resize(6, 2 * Es.size());
+			mRes.composit_edges_colors(mRes.mV_tag, Es, mRes.E_final_rend);
+			mRes.composit_edges_centernodes_triangles(Fs, mRes.mV_tag, mRes.E_final_rend, mRes.mV_final_rend, mRes.F_final_rend);
+
+
+			mExtractionResultShader_F_done.bind();
+			mExtractionResultShader_F_done.uploadAttrib("position", mRes.mV_final_rend);
+			mExtractionResultShader_F_done.uploadIndices(mRes.F_final_rend);
+
+			auto const &R4 = mRes.E_final_rend;
+			mExtractionResultShader_E_done.bind();
+			mExtractionResultShader_E_done.uploadAttrib("position", MatrixXf(R4.block(0, 0, 3, R4.cols())));
+			mExtractionResultShader_E_done.uploadAttrib("color", MatrixXf(R4.block(3, 0, 3, R4.cols())));
+		}
+	};
+	cb2(0.0f);
+	slider->setCallback(cb2);
+	slider->setId("slider1");
 //layout
     performLayout();
 }
@@ -674,7 +715,7 @@ void Viewer::drawContents() {
 		mExtractionResultShader_F_done.setUniform("model", model);
 		mExtractionResultShader_F_done.setUniform("view", view);
 		mExtractionResultShader_F_done.setUniform("proj", proj);
-		mExtractionResultShader_F_done.setUniform("split", mSplit, false);
+		//mExtractionResultShader_F_done.setUniform("split", mSplit, false);
 		mExtractionResultShader_F_done.setUniform("base_color", mBaseColorBoundary);
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		glPolygonOffset(1.0, 1.0);
@@ -685,7 +726,7 @@ void Viewer::drawContents() {
 	{
 		auto &shader = mExtractionResultShader_E_done;
 		shader.bind();
-		shader.setUniform("split", mSplit, false);
+		//shader.setUniform("split", mSplit, false);
 		shader.setUniform("mvp", mvp);
 		shader.drawArray(GL_LINES, 0, mRes.E_final_rend.cols());
 	}

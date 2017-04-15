@@ -962,7 +962,22 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 
 	reindex_2D(mV_tag, F_tag);
 	composit_edges_centernodes_triangles(F_tag, mV_tag, E_final_rend, mV_final_rend, F_final_rend);
-	
+
+	ECs.clear();
+	ECs.resize(F_tag.size(), Eigen::Vector4f::Zero());
+	for (uint32_t i = 0; i < F_tag.size(); i++) {
+		vector<uint32_t> vs = F_tag[i];
+		for (auto vid : vs) {
+			Vector4f v;
+			v[0] = mV_tag(0,vid);
+			v[1] = mV_tag(1, vid);
+			v[2] = mV_tag(2, vid);
+			v[3] = 1;
+			ECs[i] += v;
+		}
+		ECs[i] /= vs.size();
+	}
+
 	//mesh element statistics
 	uint32_t largest_polygon = 0;
 	for (auto vs : F_tag) if (vs.size() > largest_polygon) largest_polygon = vs.size();
