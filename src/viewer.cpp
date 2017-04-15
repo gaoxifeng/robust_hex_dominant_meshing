@@ -169,46 +169,12 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 	mScaleBox->setAlignment(TextBox::Alignment::Right);
 	mScaleBox->setId("outputscale");
 
-	mTmeshingBtn = new Button(window, "Tet-meshing", ENTYPO_ICON_FLASH);
-	mTmeshingBtn->setBackgroundColor(Color(0, 0, 255, 25));
-	mTmeshingBtn->setFlags(Button::Flags::ToggleButton);
-	mTmeshingBtn->setChangeCallback([&](bool value) {
-		mRes.tet_meshing();
-	});
 
-//Config Layers
-	PopupButton *openBtn3 = new PopupButton(window, "Config Layers");
-	auto popup3 = openBtn3->popup();
-	popup3->setLayout(new GroupLayout());
-	Configlayers[Config_Layers::Alignment] = new CheckBox(popup3, "Boundary alignment");
-	Configlayers[Config_Layers::Extrinsic] = new CheckBox(popup3, "Extrinsic smoothing");
-	Configlayers[Config_Layers::Randomization] = new CheckBox(popup3, "Randomization");
-	Configlayers[Config_Layers::Hierarchy] = new CheckBox(popup3, "Hierarchy");
-	int ctr = 0;
-	for (auto l : Configlayers) {
-		l->setChecked(true);
-		l->setId("configlayer." + std::to_string(ctr++));
-	}
-//Render Layers
-    PopupButton *openBtn = new PopupButton(window, "Render Layers");
-    auto popup = openBtn->popup();
-    popup->setLayout(new GroupLayout());
 
-    mLayers[Layers::Tetrahedra]               = new CheckBox(popup, "Tetrahedra");
-    mLayers[Layers::OrientationField]         = new CheckBox(popup, "Orientation field");
-    mLayers[Layers::OrientationSingularities] = new CheckBox(popup, "Orientation singularities");
-    mLayers[Layers::PositionField]            = new CheckBox(popup, "Position field");
-    mLayers[Layers::PositionSingularities]    = new CheckBox(popup, "Position singularities");
-    mLayers[Layers::Boundary]                 = new CheckBox(popup, "Boundary");
-    mLayers[Layers::BoundaryWireframe]        = new CheckBox(popup, "Boundary wireframe");
-
-    ctr = 0;
-    for (auto l : mLayers) {
-        l->setChecked(false);
-        l->setId("layer." + std::to_string(ctr++));
-    }
-//build structure	
-	mSolveDatastructureBtn = new Button(window, "Build-Structure", ENTYPO_ICON_FLASH);
+//2D&3D
+	Widget *statePanel = new Widget(window);
+	statePanel->setLayout(new BoxLayout(Orientation::Horizontal, Alignment::Middle, 0, 5));
+	mSolveDatastructureBtn = new Button(statePanel, "Surface", ENTYPO_ICON_FLASH);
 	mSolveDatastructureBtn->setBackgroundColor(Color(0, 0, 255, 25));
 	mSolveDatastructureBtn->setFlags(Button::Flags::ToggleButton);
 	mSolveDatastructureBtn->setChangeCallback([&](bool value) {
@@ -226,17 +192,11 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		mMeshShader.uploadIndices(mRes.F());
 		mMeshShader.uploadAttrib("normal", mRes.N());
 
-		if (mRes.tetMesh()) {
-			mOrientationFieldShaderTet.bind();
-			mOrientationFieldShaderTet.shareAttrib(mTetShader, "position");
-			mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
-		}
-		else {
-			mOrientationFieldShaderTri.bind();
-			mOrientationFieldShaderTri.shareAttrib(mTetShader, "position");
-			mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
-			mOrientationFieldShaderTri.uploadAttrib("n", mRes.N());
-		}
+
+		mOrientationFieldShaderTri.bind();
+		mOrientationFieldShaderTri.shareAttrib(mTetShader, "position");
+		mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
+		mOrientationFieldShaderTri.uploadAttrib("n", mRes.N());
 
 		mPositionFieldShader.bind();
 		mPositionFieldShader.uploadAttrib("o", mRes.O());
@@ -245,6 +205,36 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		mLayers[Layers::PositionField]->setChecked(true);
 	});
 	
+	mTmeshingBtn = new Button(statePanel, "Volume", ENTYPO_ICON_FLASH);
+	mTmeshingBtn->setBackgroundColor(Color(0, 0, 255, 25));
+	mTmeshingBtn->setFlags(Button::Flags::ToggleButton);
+	mTmeshingBtn->setChangeCallback([&](bool value) {
+		mRes.tet_meshing();
+
+		mRes.build();
+
+		mTetShader.bind();
+
+		MatrixXf vertexColors = MatrixXf::Zero(4, mRes.vertexCount());
+		mTetShader.uploadAttrib("position", mRes.V());
+		mTetShader.uploadIndices(mRes.T());
+		mTetShader.uploadAttrib("color", vertexColors);
+
+		mMeshShader.bind();
+		mMeshShader.shareAttrib(mTetShader, "position");
+		mMeshShader.uploadIndices(mRes.F());
+		mMeshShader.uploadAttrib("normal", mRes.N());
+
+		mOrientationFieldShaderTet.bind();
+		mOrientationFieldShaderTet.shareAttrib(mTetShader, "position");
+		mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
+
+		mPositionFieldShader.bind();
+		mPositionFieldShader.uploadAttrib("o", mRes.O());
+
+		mLayers[Layers::Boundary]->setChecked(true);
+		mLayers[Layers::PositionField]->setChecked(true);
+	});
 //Rosy
     mSolveOrientationBtn = new Button(window, "Rosy", ENTYPO_ICON_FLASH);
     mSolveOrientationBtn->setBackgroundColor(Color(0, 0, 255, 25));
@@ -276,40 +266,6 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
         if (value == false)
             updatePositionSingularities();
     });
-
-	PopupButton *MorphingBtn = new PopupButton(window, "Morphing");
-	Popup *morphPopup = MorphingBtn->popup();
-	morphPopup->setAnchorHeight(61);
-
-	morphPopup->setLayout(new GroupLayout());
-
-	mEdgeTagging = new CheckBox(morphPopup, "Coloring");
-	mEdgeTagging->setId("showedgetags");
-	mEdgeTagging->setChecked(false);
-	mEdgeTagging->setCallback([&](bool value) {
-		if (!mRes.tetMesh())
-			mRes.init_edge_tagging2D();
-		else
-		{
-			mRes.init_edge_tagging3D();
-		}
-		auto const &R = mRes.E_rend;
-		mExtractionResultShader.bind();
-		mExtractionResultShader.uploadAttrib("position", MatrixXf(R.block(0, 0, 3, R.cols())));
-		mExtractionResultShader.uploadAttrib("color", MatrixXf(R.block(3, 0, 3, R.cols())));
-
-		mLayers[Layers::PositionField]->setChecked(false);
-		mLayers[Layers::PositionSingularities]->setChecked(false);
-		mLayers[Layers::Boundary]->setChecked(false);
-	});
-	Slider *slider2 = new Slider(morphPopup);
-	slider2->setValue(0.0);
-	auto cb = [&](Float value) {
-		mRes.E_I_rend = (1 - value) * mRes.E_rend + value*mRes.E_O_rend;
-	};
-	cb(0.0f);
-	slider2->setCallback(cb);
-	slider2->setId("slider2");
 //Extraction
     mExtractBtn = new Button(window, "Extract", ENTYPO_ICON_FLASH);
     mExtractBtn->setBackgroundColor(Color(0, 255, 0, 25));
@@ -361,6 +317,73 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
     cb2(0.0f);
     slider->setCallback(cb2);
     slider->setId("slider1");
+
+
+	//Config Layers
+	PopupButton *openBtn3 = new PopupButton(window, "Config Layers");
+	auto popup3 = openBtn3->popup();
+	popup3->setLayout(new GroupLayout());
+	Configlayers[Config_Layers::Alignment] = new CheckBox(popup3, "Boundary alignment");
+	Configlayers[Config_Layers::Extrinsic] = new CheckBox(popup3, "Extrinsic smoothing");
+	Configlayers[Config_Layers::Randomization] = new CheckBox(popup3, "Randomization");
+	Configlayers[Config_Layers::Hierarchy] = new CheckBox(popup3, "Hierarchy");
+	int ctr = 0;
+	for (auto l : Configlayers) {
+		l->setChecked(true);
+		l->setId("configlayer." + std::to_string(ctr++));
+	}
+	//Render Layers
+	PopupButton *openBtn = new PopupButton(window, "Render Layers");
+	auto popup = openBtn->popup();
+	popup->setLayout(new GroupLayout());
+
+	mLayers[Layers::Tetrahedra] = new CheckBox(popup, "Tetrahedra");
+	mLayers[Layers::OrientationField] = new CheckBox(popup, "Orientation field");
+	mLayers[Layers::OrientationSingularities] = new CheckBox(popup, "Orientation singularities");
+	mLayers[Layers::PositionField] = new CheckBox(popup, "Position field");
+	mLayers[Layers::PositionSingularities] = new CheckBox(popup, "Position singularities");
+	mLayers[Layers::Boundary] = new CheckBox(popup, "Boundary");
+	mLayers[Layers::BoundaryWireframe] = new CheckBox(popup, "Boundary wireframe");
+
+	ctr = 0;
+	for (auto l : mLayers) {
+		l->setChecked(false);
+		l->setId("layer." + std::to_string(ctr++));
+	}
+//morphing
+	PopupButton *MorphingBtn = new PopupButton(window, "Morphing");
+	Popup *morphPopup = MorphingBtn->popup();
+	morphPopup->setAnchorHeight(61);
+
+	morphPopup->setLayout(new GroupLayout());
+
+	mEdgeTagging = new CheckBox(morphPopup, "Coloring");
+	mEdgeTagging->setId("showedgetags");
+	mEdgeTagging->setChecked(false);
+	mEdgeTagging->setCallback([&](bool value) {
+		if (!mRes.tetMesh())
+			mRes.init_edge_tagging2D();
+		else
+		{
+			mRes.init_edge_tagging3D();
+		}
+		auto const &R = mRes.E_rend;
+		mExtractionResultShader.bind();
+		mExtractionResultShader.uploadAttrib("position", MatrixXf(R.block(0, 0, 3, R.cols())));
+		mExtractionResultShader.uploadAttrib("color", MatrixXf(R.block(3, 0, 3, R.cols())));
+
+		mLayers[Layers::PositionField]->setChecked(false);
+		mLayers[Layers::PositionSingularities]->setChecked(false);
+		mLayers[Layers::Boundary]->setChecked(false);
+	});
+	Slider *slider2 = new Slider(morphPopup);
+	slider2->setValue(0.0);
+	auto cb = [&](Float value) {
+		mRes.E_I_rend = (1 - value) * mRes.E_rend + value*mRes.E_O_rend;
+	};
+	cb(0.0f);
+	slider2->setCallback(cb);
+	slider2->setId("slider2");
 //output
 	PopupButton *ConstraintsBtn = new PopupButton(window, "Output");
 	ConstraintsBtn->setIcon(ENTYPO_ICON_ROCKET);
