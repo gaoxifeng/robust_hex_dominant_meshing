@@ -719,7 +719,7 @@ void Viewer::drawContents() {
 		mExtractionResultShader_F_done.setUniform("base_color", mBaseColorBoundary);
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		glPolygonOffset(1.0, 1.0);
-		mExtractionResultShader_F_done.drawIndexed(GL_TRIANGLES, 0, mRes.F_final_rend.cols() * 3);
+		mExtractionResultShader_F_done.drawIndexed(GL_TRIANGLES, 0, mRes.F_final_rend.cols());
 		glDisable(GL_POLYGON_OFFSET_FILL);
 	}
 	if (mShow_E_done->checked())
