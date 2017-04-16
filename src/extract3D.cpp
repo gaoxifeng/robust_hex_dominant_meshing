@@ -966,12 +966,15 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 		times++;
 	}
 
+
 	uint32_t largest_polyhdral = 0;
 	for (uint32_t i = 0; i < P_tag.size(); i++)
 		if (P_tag[i].size() > largest_polyhdral) largest_polyhdral = P_tag[i].size();
 
 	uint32_t hex_num = 0; std::vector<uint32_t> H_type(largest_polyhdral + 1, 0), F_type(F_tag.size(), 0);
 	Hex_flag.clear(); Hex_flag.resize(P_tag.size(), false);
+	ECs.clear();
+	ECs.resize(P_tag.size(), Eigen::Vector4f::Zero());
 	for (uint32_t i = 0; i < P_tag.size(); i++) {
 		H_type[P_tag[i].size()]++;
 		//find hex
@@ -987,6 +990,19 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 				Hex_flag[i] = true;
 			}
 		}
+		vector<uint32_t> vs;
+		for (auto f : P_tag[i])vs.insert(vs.end(), F_tag[f].begin(), F_tag[f].end());
+		sort(vs.begin(), vs.end()); vs.erase(std::unique(vs.begin(), vs.end()), vs.end());
+		for (auto vid : vs) {
+			Vector4f v;
+			v[0] = mV_tag(0, vid);
+			v[1] = mV_tag(1, vid);
+			v[2] = mV_tag(2, vid);
+			v[3] = 1;
+
+			ECs[i] += v;
+		}
+		ECs[i] /= vs.size();
 	}
 	//statistics
 	sta.hex_ratio = Float(hex_num) / P_tag.size();
@@ -1006,6 +1022,8 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 	E_final_rend.resize(6, 2 * mpEs.size());
 	composit_edges_colors(mV_tag, mpEs, E_final_rend);
 	composit_edges_centernodes_triangles(F_tag, mV_tag, E_final_rend, mV_final_rend, F_final_rend);
+
+
 
 	cout << "done with extraction!" << endl;
 }

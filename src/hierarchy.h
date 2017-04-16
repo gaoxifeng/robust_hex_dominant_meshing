@@ -41,6 +41,8 @@ public:
 	//protected:
 	void build();
 	void construct_tEs_tFEs(MatrixXu & F, std::vector<std::vector<uint32_t>> &mtFes, std::vector<tuple_E> &mtEs);
+	void construct_tEs_tFEs(std::vector<std::vector<uint32_t>> &F, std::vector<std::vector<uint32_t>> &mtFes, std::vector<tuple_E> &mtEs);
+	void orient_polygon_mesh(MatrixXf &HV, vector<vector<uint32_t>> &HF, vector<vector<uint32_t>> &HFE, vector<tuple_E> &Es);
 	bool tet_meshing();
 
     bool tetMesh() const { return mT.cols() > 0; }
@@ -199,6 +201,7 @@ public:
 
 	std::vector<int> F_tag_type;
 	std::vector<std::vector<uint32_t>> F_final, P_final;
+	std::vector<Vector4f> ECs;
 	//for t-mesh vertex tag
 	vector<int> V_flag;
 	//for rendering

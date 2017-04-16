@@ -82,6 +82,7 @@ set(TBB_BUILD_STATIC ON CACHE BOOL " " FORCE)
 set(TBB_BUILD_SHARED OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
+set(TBB_BUILD_TESTS OFF CACHE BOOL " " FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/tbb ext_build/tbb)
 set_property(TARGET tbb_static tbb_def_files PROPERTY FOLDER "dependencies")
 
@@ -108,7 +109,7 @@ include_directories(
   # RPLY mesh I/O library
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/rply
   # Tetgen
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/tetgen 
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/tetgen
   # Resource file
   ${CMAKE_CURRENT_BINARY_DIR}
 )
