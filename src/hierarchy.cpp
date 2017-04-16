@@ -261,11 +261,20 @@ bool MultiResolutionHierarchy::tet_meshing()
 			f_b--;
 		}
 	}
+	vector<vector<uint32_t>> HF(f_b);
 	mF.resize(3, f_b); f_b = 0;
-	for (uint32_t f = 0; f < F_num; f++)
-		if (f_boundary[f]) mF.col(f_b++) = Fs[f];
+	for (uint32_t f = 0; f < F_num+1; f++)
+		if (f_boundary[f]) {
+			mF.col(f_b) = Fs[f];
+			HF[f_b].push_back(Fs[f][0]);
+			HF[f_b].push_back(Fs[f][1]);
+			HF[f_b++].push_back(Fs[f][2]);
+		}
 
-	orient_triangle_mesh_index(mV[0], mF);
+	orient_polygon_mesh(mV[0], HF);
+	for (uint32_t i = 0; i < HF.size(); i++)
+		for (uint32_t j = 0; j < 3; j++)mF(j, i) = HF[i][j];
+	//orient_triangle_mesh_index(mV[0], mF);
 
 	std::cout << "V, F, T: " << mV[0].cols() << " " << mF.cols() << " " << mT.cols() << endl;
 	return true;
@@ -662,6 +671,89 @@ void MultiResolutionHierarchy::orient_polygon_mesh(MatrixXf &HV, vector<vector<u
 	vector<bool> flag(HF.size(), true);
 	vector<vector<uint32_t>> Efs(Es.size());
 	for (uint32_t i = 0; i < HFE.size();i++)for (auto e : HFE[i])Efs[e].push_back(i);
+	flag[start_f] = false;
+	std::queue<uint32_t> pf_temp; pf_temp.push(start_f);
+	while (!pf_temp.empty()) {
+		uint32_t fid = pf_temp.front(); pf_temp.pop();
+		for (auto eid : HFE[fid]) for (auto nfid : Efs[eid]) {
+			if (!flag[nfid]) continue;
+			uint32_t v0 = std::get<0>(Es[eid]), v1 = std::get<1>(Es[eid]);
+			int32_t v0_pos = std::find(HF[fid].begin(), HF[fid].end(), v0) - HF[fid].begin();
+			int32_t v1_pos = std::find(HF[fid].begin(), HF[fid].end(), v1) - HF[fid].begin();
+
+			if ((v0_pos + 1) % HF[fid].size() != v1_pos) swap(v0, v1);
+
+			int32_t v0_pos_ = std::find(HF[nfid].begin(), HF[nfid].end(), v0) - HF[nfid].begin();
+			int32_t v1_pos_ = std::find(HF[nfid].begin(), HF[nfid].end(), v1) - HF[nfid].begin();
+
+			if ((v0_pos_ + 1) % HF[nfid].size() == v1_pos_) std::reverse(HF[nfid].begin(), HF[nfid].end());
+
+			pf_temp.push(nfid); flag[nfid] = false;
+		}
+		if (pf_temp.empty()) {
+			bool found = false;
+			for (uint32_t i = 0; i < flag.size(); i++)if (flag[i]) {
+				start_f = i;
+				flag[start_f] = false; pf_temp.push(start_f);
+				found = true;
+			}
+			if (!found) break;
+		}
+	}
+
+	Float res = 0;
+	Vector3f ori; ori.setZero();
+	for (uint32_t i = 0; i < HF.size(); i++) {
+		auto &fvs = HF[i];
+		Vector3f center; center.setZero(); for (auto vid : fvs) center += HV.col(vid); center /= fvs.size();
+
+		for (uint32_t j = 0; j < fvs.size(); j++) {
+			Vector3f x = HV.col(fvs[j]) - ori, y = HV.col(fvs[(j + 1) % fvs.size()]) - ori, z = center - ori;
+			res += -((x[0] * y[1] * z[2] + x[1] * y[2] * z[0] + x[2] * y[0] * z[1]) - (x[2] * y[1] * z[0] + x[1] * y[0] * z[2] + x[0] * y[2] * z[1]));
+		}
+	}
+	if (res > 0) {
+		for (uint32_t i = 0; i < HF.size(); i++) std::reverse(HF[i].begin(), HF[i].end());
+	}
+}
+void MultiResolutionHierarchy::orient_polygon_mesh(MatrixXf &HV, vector<vector<uint32_t>> &HF) {
+	//orient surface
+	if (!HF.size())return;
+
+	vector<vector<uint32_t>> HFE(HF.size());
+	vector<tuple_E> Es;
+
+	std::vector<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, int>> temp;
+	temp.reserve(HF.size() * 3);
+	HFE.resize(HF.size());
+	for (uint32_t f = 0; f < HF.size(); ++f) {
+		for (uint32_t e = 0; e < HF[f].size(); ++e) {
+			uint32_t v0 = HF[f][e], v1 = HF[f][(e + 1) % HF[f].size()];
+			if (v0 > v1) std::swap(v0, v1);
+			temp.push_back(std::make_tuple(v0, v1, f, e, Edge_tag::B));
+		}
+		std::vector<uint32_t> fes(HF[f].size());
+		HFE[f] = fes;
+	}
+	std::sort(temp.begin(), temp.end());
+	Es.reserve(temp.size() / 2);
+	int E_num = -1;
+	for (uint32_t i = 0; i < temp.size(); ++i) {
+		if (i == 0 || (i != 0 && (std::get<0>(temp[i]) != std::get<0>(temp[i - 1]) ||
+			std::get<1>(temp[i]) != std::get<1>(temp[i - 1])))) {
+			E_num++;
+			Es.push_back(std::make_tuple(std::get<0>(temp[i]), std::get<1>(temp[i]), true, 0, std::get<4>(temp[i]), E_num, -1, 0));
+		}
+		else if (i != 0 && (std::get<0>(temp[i]) == std::get<0>(temp[i - 1]) &&
+			std::get<1>(temp[i]) == std::get<1>(temp[i - 1])))
+			std::get<2>(Es[E_num]) = false;
+		HFE[std::get<2>(temp[i])][std::get<3>(temp[i])] = E_num;
+	}
+	vector<vector<uint32_t>> Efs(Es.size());
+	for (uint32_t i = 0; i < HFE.size(); i++)for (auto e : HFE[i])Efs[e].push_back(i);
+
+	uint32_t start_f = 0;
+	vector<bool> flag(HF.size(), true);
 	flag[start_f] = false;
 	std::queue<uint32_t> pf_temp; pf_temp.push(start_f);
 	while (!pf_temp.empty()) {

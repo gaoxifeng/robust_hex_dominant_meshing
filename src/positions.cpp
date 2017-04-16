@@ -200,11 +200,12 @@ void MultiResolutionHierarchy::prolongPositions(int level) {
 		for (; it; ++it) {
 
 			Vector3f o_i = mO[level + 1].col(it.col());;
-			Vector3f q_i = mQ[level].col(it.row());
+			
 			Vector3f v_i = mV[level].col(it.row());
 			Vector3f n_i = mN[level].col(it.row());
 
 			if (!tetMesh()) {
+				Vector3f q_i = mQ[level].col(it.row()); 
 				if (nV_boundary_flag[level][it.row()]) {
 					o_i = q_i.dot(o_i - v_i) * q_i + v_i;
 				}
@@ -212,6 +213,7 @@ void MultiResolutionHierarchy::prolongPositions(int level) {
 				mO[level].col(it.row()) = o_i;
 			}
 			else {
+				Quaternion q_i = mQ[level].col(it.row());
 				if (nV_boundary_flag[level][it.row()] && n_i != Vector3f::Zero()) {
 					Vector3f c_i = mC[level].col(it.row());
 					Float dp = n_i.dot(c_i - o_i) * mInvScale;

@@ -43,6 +43,7 @@ public:
 	void construct_tEs_tFEs(MatrixXu & F, std::vector<std::vector<uint32_t>> &mtFes, std::vector<tuple_E> &mtEs);
 	void construct_tEs_tFEs(std::vector<std::vector<uint32_t>> &F, std::vector<std::vector<uint32_t>> &mtFes, std::vector<tuple_E> &mtEs);
 	void orient_polygon_mesh(MatrixXf &HV, vector<vector<uint32_t>> &HF, vector<vector<uint32_t>> &HFE, vector<tuple_E> &Es);
+	void orient_polygon_mesh(MatrixXf &HV, vector<vector<uint32_t>> &HF);
 	bool tet_meshing();
 
     bool tetMesh() const { return mT.cols() > 0; }
