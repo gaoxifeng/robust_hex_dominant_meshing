@@ -713,6 +713,28 @@ bool MultiResolutionHierarchy::tagging_collapseTri(bool triangle_Switch)
 							std::vector<uint32_t> pvs, pes, vs_disgard, es_disgard;
 							if (!simple_polygon(fvs, fes, pvs, pes, vs_disgard, es_disgard)) continue;
 
+							//two same polygons is not allowed
+							vector<uint32_t> nfs, nfs_;
+							for (auto eid : pes)nfs.insert(nfs.end(), Reverse_E_nts[eid].begin(), Reverse_E_nts[eid].end());
+							sort(nfs.begin(), nfs.end()); nfs.erase(unique(nfs.begin(), nfs.end()), nfs.end());
+							for (auto fid : nfs) {
+								bool find_f = false;
+								for (auto fid_ : Reverse_E_nts[id]) if (fid_ == fid)find_f = true;
+								if (!find_f) nfs_.push_back(fid);
+							}
+							bool two_poly_same = false;
+							vector<uint32_t> pvs_ = pvs; sort(pvs_.begin(), pvs_.end());
+							for (auto fid : nfs_) {
+								vector<uint32_t> vs_ = mFs2D[fid];
+								std::sort(vs_.begin(), vs_.end());
+
+								if (pvs_.size() == vs_.size() && std::equal(pvs_.begin(), pvs_.end(), vs_.begin())){
+									two_poly_same = true;
+									break;
+								}
+							}
+							if (two_poly_same) continue;
+
 							std::get<4>(mEs[id]) = Edge_tag::D;
 
 							uint32_t f0 = Reverse_E_nts[id][0], f1 = Reverse_E_nts[id][1];
@@ -1451,6 +1473,9 @@ bool MultiResolutionHierarchy::split_face2D(bool red_edge) {
 }
 bool MultiResolutionHierarchy::remove_doublets2D(){
 	uint32_t n_dashed = 0;
+
+	if (F_tag.size() == 3) return 0;//hack, avoid degeneracy of the simplest shape
+
 	mV_flag.resize(mV_tag.size()); std::fill(mV_flag.begin(), mV_flag.end(), false);
 	mE_flag.resize(mEs.size()); std::fill(mE_flag.begin(), mE_flag.end(), false);
 	mF_flag.resize(F_tag.size()); std::fill(mF_flag.begin(), mF_flag.end(), true);
