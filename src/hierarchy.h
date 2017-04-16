@@ -136,7 +136,9 @@ public:
 	void setScale(Float scale) { 
 		ratio_scale = scale; 
 		mScale = diagonalLen * scale; 
-		mInvScale = 1.f / mScale;}
+		mInvScale = 1.f / mScale;
+		tet_elen = tElen_ratio * ratio_scale * diagonalLen * 0.3;
+	}
 
     ordered_lock &mutex() const { return mMutex; }
 
