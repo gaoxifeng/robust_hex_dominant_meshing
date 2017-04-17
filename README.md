@@ -9,6 +9,14 @@ In ACM Transactions on Graphics (Proceedings of SIGGRAPH 2017)
 
 # Compiling
 
+Compiling from scratch requires CMake and a recent version of Clion on Mac and Visual Studio 2015 on Windows.
+
+git clone --recursive https://github.com/gaoxifeng/robust_hex_dominant_meshing.git
+
+On MacOS, compiling should be as simple as Load the project "robust_hex_dominant_meshing" into CLion and Build from Clion
+
+On Windows, open the generated file InstantMeshes.sln after CMake compilation and proceed building as usual from within Visual Studio.
+
 # Usage
 
 Step 1: launch the program and click "Open mesh" to select a mesh in .obj format;
