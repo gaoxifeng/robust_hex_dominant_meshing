@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
         help = true;
     }
 	
-	nprocs = 1;
+	nprocs = -1;
     tbb::task_scheduler_init init(nprocs == -1 ? tbb::task_scheduler_init::automatic : nprocs);
 
 	if (Batch_Process) {
