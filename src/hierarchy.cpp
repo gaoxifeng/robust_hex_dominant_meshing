@@ -44,7 +44,7 @@ bool MultiResolutionHierarchy::load(const std::string &filename) {
 
 	ms = compute_mesh_stats(mF, mV[0]);
 	diagonalLen = 3 * (mAABB.max - mAABB.min).norm() / 100;
-	ratio_scale = ms.mAverageEdgeLength * 3 / diagonalLen;
+	ratio_scale = ms.mAverageEdgeLength * 3.5 / diagonalLen;
 	tet_elen = tElen_ratio * ratio_scale * diagonalLen * 0.3;
 
     return true;

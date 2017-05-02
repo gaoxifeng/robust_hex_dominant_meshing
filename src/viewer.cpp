@@ -619,6 +619,7 @@ void Viewer::drawContents() {
     }
 
     glPointSize(15);
+	// This must be enabled, otherwise glLineWidth has no effect
 	glEnable(GL_LINE_SMOOTH);
 	glLineWidth(5);
 
