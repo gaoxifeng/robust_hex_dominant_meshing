@@ -118,7 +118,7 @@ public:
 		int32_t share_the_same_fs(vector<uint32_t> &es, const uint32_t eid);
 		Float compute_cost_face3D(vector<uint32_t> &vs, uint32_t rv, bool single);
 		Float compute_cost_edge3D(uint32_t v0, uint32_t v1);
-		
+		void tagging_singularities_T_nodes();
 
 	void composit_edges_colors(MatrixXf &Result_Vs, std::vector<tuple_E> &Es_to_render, MatrixXf &Result_edges);
 	void composit_edges_centernodes_triangles(std::vector<std::vector<uint32_t>> &Actual_Fs, MatrixXf &nodes, MatrixXf &Result_edges, MatrixXf &center_nodes, MatrixXu &Triangles);

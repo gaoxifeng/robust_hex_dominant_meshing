@@ -1011,6 +1011,12 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 	std::cout << "Total polygon: " << F_tag.size() << "  Quad_num: " << quad_num << "  Ratio: " << Float(quad_num) / F_tag.size() << endl;
 	for (uint32_t i = 0; i < Q_type.size(); i++)
 		if (Q_type[i]) std::cout << i << "_thgon: " << Q_type[i] << endl;
+
+#ifdef T_VTAG
+	cout << "TVTAG" << endl;
+	tagging_singularities_T_nodes();
+#endif
+
 	return true;
 
 }
@@ -1676,7 +1682,76 @@ Float MultiResolutionHierarchy::compute_cost_edge2D_angle(int32_t v0, int32_t v1
 
 	return angles[0];
 }
+void MultiResolutionHierarchy::tagging_singularities_T_nodes() {
+	enum  V_type
+	{
+		regular = 0,
+		singular,
+		t_node,
+		boundary,
+		s_t_node,
+	};
+	vector<std::vector<uint32_t>> Vs_nes(mV_tag.cols()), Vs_nfs(mV_tag.cols());
+	vector<bool> mV_B_flag(mV_copy2D.cols(), false);
+	V_flag.resize(mV_copy2D.cols());
+	fill(V_flag.begin(), V_flag.end(), V_type::regular);//boundary flag
 
+	for (auto e : mEs) if (std::get<2>(e) == 1) { mV_B_flag[std::get<1>(e)] = mV_B_flag[std::get<0>(e)] = true; }
+	for (uint32_t i = 0; i < mEs.size(); i++) {
+		uint32_t v0 = std::get<0>(mEs[i]), v1 = std::get<1>(mEs[i]);
+		Vs_nes[v0].push_back(i);
+		Vs_nes[v1].push_back(i);
+	}
+	for (uint32_t f = 0; f < F_tag.size(); ++f) for (auto vid : F_tag[f]) Vs_nfs[vid].push_back(f);
+
+	vector<int32_t> V_tags(mV_tag.cols(), 0);//0-regular, 1-singular, 2-t_node, 3 -boundary, and 4 both singular & t_node
+	for (uint32_t i = 0; i < Vs_nfs.size(); i++) {
+		if (mV_B_flag[i]) {
+			V_flag[i] = V_type::boundary;
+			continue;
+		}
+
+		if (Vs_nes[i].size() != 4) {
+			V_flag[i] = V_type::singular;
+			continue;
+		}
+	}
+	for (uint32_t i = 0; i < F_tag.size(); i++) {
+		if (F_tag[i].size() == 5) {
+			vector<int32_t> t_candidates;
+			for (uint32_t j = 0; j < F_tag[i].size(); j++) {
+				//if (Vs_nes[F_tag[i][j]].size() == 3 && !mV_B_flag[F_tag[i][j]]) t_candidates.push_back(j);
+				if (mV_B_flag[F_tag[i][j]]) {
+					if (Vs_nes[F_tag[i][j]].size() == 3 || Vs_nes[F_tag[i][j]].size() == 2) t_candidates.push_back(j);
+				}
+				else {
+					if (Vs_nes[F_tag[i][j]].size() == 3) t_candidates.push_back(j);
+				}
+			}
+			if (t_candidates.size()) {
+
+				vector<tuple<double, uint32_t>> vs_rank;
+				for (auto v_id : t_candidates) {
+					int32_t v0_pre = (v_id - 1 + F_tag[i].size()) % F_tag[i].size(), v0_aft = (v_id + 1) % F_tag[i].size();
+
+					MatrixXf bes_vec(3, 2);
+					bes_vec.col(0) = (mV_tag.col(F_tag[i][v_id]) - mV_tag.col(F_tag[i][v0_pre])).normalized();
+					bes_vec.col(1) = (mV_tag.col(F_tag[i][v_id]) - mV_tag.col(F_tag[i][v0_aft])).normalized();
+
+					Float dot_ = bes_vec.col(0).dot(bes_vec.col(1));
+					Float angle = std::acos(dot_);
+					Float cost = std::abs(angle - PAI);// (std::abs(n.sum()));
+					vs_rank.push_back(std::make_tuple(cost, v_id));
+				}
+				sort(vs_rank.begin(), vs_rank.end());
+				V_flag[get<1>(vs_rank[0])] = V_type::t_node;
+			}
+			else {
+				cout << "singular & t-node pentagon " << i << endl;
+			}
+		}
+	}
+}
 void MultiResolutionHierarchy::composit_edges_colors(MatrixXf &Result_Vs, std::vector<tuple_E> &Es_to_render, MatrixXf &Result_edges)
 {
 	Result_edges.resize(6, 2 * Es_to_render.size());

@@ -397,6 +397,11 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 		if (!mRes.tetMesh()) {
 			sprintf(patho, "%s%s", filename.c_str(), "_surout.obj");
 			write_surface_mesh_OBJ(mRes.mV_tag, mRes.F_tag, patho);
+
+#ifdef T_VTAG
+			sprintf(patho, "%s%s", filename.c_str(), "_V_flag.txt");
+			write_Vertex_Types_TXT(mRes.V_flag, patho);
+#endif		
 		}
 		else {
 			sprintf(patho, "%s%s", filename.c_str(), ".HYBRID");
@@ -555,7 +560,8 @@ void Viewer::updateOrientationSingularities() {
 }
 
 void Viewer::drawContents() {
-	glClearColor(.5, .5, .5, 1.0f);
+	//glClearColor(.5, .5, .5, 1.0f);
+	glClearColor(1, 1, 1, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	mOptimizer->setAlignment(Configlayers[Config_Layers::Alignment]->checked());
