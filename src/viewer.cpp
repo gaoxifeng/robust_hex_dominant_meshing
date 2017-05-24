@@ -560,8 +560,8 @@ void Viewer::updateOrientationSingularities() {
 }
 
 void Viewer::drawContents() {
-	//glClearColor(.5, .5, .5, 1.0f);
-	glClearColor(1, 1, 1, 1.0f);
+	glClearColor(.5, .5, .5, 1.0f);
+	//glClearColor(1, 1, 1, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	mOptimizer->setAlignment(Configlayers[Config_Layers::Alignment]->checked());
@@ -624,7 +624,10 @@ void Viewer::drawContents() {
         //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    glPointSize(1.5);
+    glPointSize(15);
+	// This must be enabled, otherwise glLineWidth has no effect
+	glEnable(GL_LINE_SMOOTH);
+	glLineWidth(5);
 
     if (mLayers[OrientationField]->checked()) {
         auto &shader = mRes.tetMesh() ? mOrientationFieldShaderTet : mOrientationFieldShaderTri;
@@ -632,7 +635,7 @@ void Viewer::drawContents() {
         shader.setUniform("mvp", mvp);
         shader.setUniform("split", mSplit, false);
         shader.setUniform("scale", mRes.averageEdgeLength() / 3);
-        shader.drawArray(GL_POINTS, 0, mRes.tetMesh() ? mRes.mO[0].cols() : mRes.faceCount());
+        shader.drawArray(GL_POINTS, 0, mRes.tetMesh() ? mRes.vertexCount() : mRes.vertexCount());
     }
 
     if (mLayers[PositionField]->checked()) {
