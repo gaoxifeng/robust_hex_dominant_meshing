@@ -17,7 +17,7 @@ git clone --recursive https://github.com/gaoxifeng/robust_hex_dominant_meshing.g
 
 On MacOS, compiling should be as simple as Load the project "robust_hex_dominant_meshing" into CLion and Build from Clion
 
-On Windows, open the generated file InstantMeshes.sln after CMake compilation and proceed building as usual from within Visual Studio.
+On Windows, open the generated file robust_hex_dominant_meshing.sln after CMake compilation and proceed building as usual from within Visual Studio.
 
 # Usage
 
