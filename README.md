@@ -2,7 +2,7 @@
 
 This repository contains the meshing software developed as part of the publication
 
-Robust Hex-Dominant Mesh Generation using Field-Guided Polyhedral Agglomeration
+Robust Hex-Dominant Mesh Generation using Field-Guided Polyhedral Agglomeration (see https://gaoxifeng.github.io/research.html for paper, supplemental materials, dataset, and videos)
 
 Xifeng Gao, Wenzel Jakob, Marco Tarini, Daniele Panozzo
 
