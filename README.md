@@ -8,7 +8,7 @@ Xifeng Gao, Wenzel Jakob, Marco Tarini, Daniele Panozzo
 
 In ACM Transactions on Graphics (Proceedings of SIGGRAPH 2017)
 
-# see https://gaoxifeng.github.io/research.html for paper, supplemental materials, dataset, and videos
+> **paper|supplemental materials|dataset|videos:** https://gaoxifeng.github.io/research.html
 
 # Compiling
 
