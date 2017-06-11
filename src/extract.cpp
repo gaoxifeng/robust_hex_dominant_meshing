@@ -18,6 +18,9 @@ std::vector<bool> mE_flag, mF_flag;
 MatrixXf mQ_copy2D, mO_copy2D, mN_copy2D, mV_copy2D;
 MatrixXf newQ2D, newN2D, newV2D;
 bool non_manifold = false;
+//V_flag
+std::vector<std::vector<uint32_t>> mFs2D_O;
+std::vector<tuple_E> mEs_O;
 //2D===========================================================================================================//
 void construct_Es_FEs()
 {
@@ -805,6 +808,8 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 	mFs2D.resize(mF.cols());
 	for (uint32_t i = 0; i < mF.cols(); ++i) for (int j = 0; j < 3; ++j) mFs2D[i].push_back(mF(j, i));
 	construct_Es_FEs();
+
+	mFs2D_O = mFs2D; mEs_O = mEs;
 
 	int genus_pre = -1, genus_aft = -1; bool manifoldness_pre = true, manifoldness_aft = true;
 	topology_check_2D(mFs2D, FEs, genus_pre, manifoldness_pre);
@@ -1691,20 +1696,36 @@ void MultiResolutionHierarchy::tagging_singularities_T_nodes() {
 		boundary,
 		s_t_node,
 	};
-	vector<std::vector<uint32_t>> Vs_nes(mV_tag.cols()), Vs_nfs(mV_tag.cols());
-	vector<bool> mV_B_flag(mV_copy2D.cols(), false);
-	V_flag.resize(mV_copy2D.cols());
+
+	MatrixXf V_tagging;
+	std::vector<tuple_E> E_tagging;
+	std::vector<std::vector<uint32_t>> F_tagging;
+	if (o_flag) {
+		V_tagging = mV[0];
+		E_tagging = mEs_O;
+		F_tagging = mFs2D_O;
+	}
+	else {
+		V_tagging = mV_tag;
+		E_tagging = mEs;
+		F_tagging = F_tag;
+	}
+
+
+	vector<std::vector<uint32_t>> Vs_nes(V_tagging.cols()), Vs_nfs(V_tagging.cols());
+	vector<bool> mV_B_flag(V_tagging.cols(), false);
+	V_flag.resize(V_tagging.cols());
 	fill(V_flag.begin(), V_flag.end(), V_type::regular);//boundary flag
 
-	for (auto e : mEs) if (std::get<2>(e) == 1) { mV_B_flag[std::get<1>(e)] = mV_B_flag[std::get<0>(e)] = true; }
-	for (uint32_t i = 0; i < mEs.size(); i++) {
-		uint32_t v0 = std::get<0>(mEs[i]), v1 = std::get<1>(mEs[i]);
+	for (auto e : E_tagging) if (std::get<2>(e) == 1) { mV_B_flag[std::get<1>(e)] = mV_B_flag[std::get<0>(e)] = true; }
+	for (uint32_t i = 0; i < E_tagging.size(); i++) {
+		uint32_t v0 = std::get<0>(E_tagging[i]), v1 = std::get<1>(E_tagging[i]);
 		Vs_nes[v0].push_back(i);
 		Vs_nes[v1].push_back(i);
 	}
-	for (uint32_t f = 0; f < F_tag.size(); ++f) for (auto vid : F_tag[f]) Vs_nfs[vid].push_back(f);
+	for (uint32_t f = 0; f < F_tagging.size(); ++f) for (auto vid : F_tagging[f]) Vs_nfs[vid].push_back(f);
 
-	vector<int32_t> V_tags(mV_tag.cols(), 0);//0-regular, 1-singular, 2-t_node, 3 -boundary, and 4 both singular & t_node
+	vector<int32_t> V_tags(V_tagging.cols(), 0);//0-regular, 1-singular, 2-t_node, 3 -boundary, and 4 both singular & t_node
 	for (uint32_t i = 0; i < Vs_nfs.size(); i++) {
 		if (mV_B_flag[i]) {
 			V_flag[i] = V_type::boundary;
@@ -1716,27 +1737,27 @@ void MultiResolutionHierarchy::tagging_singularities_T_nodes() {
 			continue;
 		}
 	}
-	for (uint32_t i = 0; i < F_tag.size(); i++) {
-		if (F_tag[i].size() == 5) {
+	for (uint32_t i = 0; i < F_tagging.size(); i++) {
+		if (F_tagging[i].size() == 5) {
 			vector<int32_t> t_candidates;
-			for (uint32_t j = 0; j < F_tag[i].size(); j++) {
+			for (uint32_t j = 0; j < F_tagging[i].size(); j++) {
 				//if (Vs_nes[F_tag[i][j]].size() == 3 && !mV_B_flag[F_tag[i][j]]) t_candidates.push_back(j);
-				if (mV_B_flag[F_tag[i][j]]) {
-					if (Vs_nes[F_tag[i][j]].size() == 3 || Vs_nes[F_tag[i][j]].size() == 2) t_candidates.push_back(j);
+				if (mV_B_flag[F_tagging[i][j]]) {
+					if (Vs_nes[F_tagging[i][j]].size() == 3 || Vs_nes[F_tagging[i][j]].size() == 2) t_candidates.push_back(j);
 				}
 				else {
-					if (Vs_nes[F_tag[i][j]].size() == 3) t_candidates.push_back(j);
+					if (Vs_nes[F_tagging[i][j]].size() == 3) t_candidates.push_back(j);
 				}
 			}
 			if (t_candidates.size()) {
 
 				vector<tuple<double, uint32_t>> vs_rank;
 				for (auto v_id : t_candidates) {
-					int32_t v0_pre = (v_id - 1 + F_tag[i].size()) % F_tag[i].size(), v0_aft = (v_id + 1) % F_tag[i].size();
+					int32_t v0_pre = (v_id - 1 + F_tagging[i].size()) % F_tagging[i].size(), v0_aft = (v_id + 1) % F_tagging[i].size();
 
 					MatrixXf bes_vec(3, 2);
-					bes_vec.col(0) = (mV_tag.col(F_tag[i][v_id]) - mV_tag.col(F_tag[i][v0_pre])).normalized();
-					bes_vec.col(1) = (mV_tag.col(F_tag[i][v_id]) - mV_tag.col(F_tag[i][v0_aft])).normalized();
+					bes_vec.col(0) = (V_tagging.col(F_tagging[i][v_id]) - V_tagging.col(F_tagging[i][v0_pre])).normalized();
+					bes_vec.col(1) = (V_tagging.col(F_tagging[i][v_id]) - V_tagging.col(F_tagging[i][v0_aft])).normalized();
 
 					Float dot_ = bes_vec.col(0).dot(bes_vec.col(1));
 					Float angle = std::acos(dot_);

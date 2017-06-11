@@ -191,7 +191,7 @@ public:
 	MeshStats ms;
 	bool re_color;
 	bool doublets, triangles, decomposes, splitting, Qquadric;
-
+	bool o_flag;
 	MatrixXf mV_final;
 	std::vector<tuple_E> Es_reddash_left;
 

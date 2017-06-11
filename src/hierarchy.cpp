@@ -19,6 +19,7 @@ MultiResolutionHierarchy::MultiResolutionHierarchy() {
 	tet_elen = 0.6;
 	re_color = true;
 	Qquadric = splitting = decomposes = doublets = triangles = false;
+	o_flag = false;
 }
 
 bool MultiResolutionHierarchy::load(const std::string &filename) {

@@ -269,6 +269,12 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
             updatePositionSingularities();
     });
 //Extraction
+#ifdef T_VTAG
+	mShow_V_flag = new CheckBox(window, "O_V_flag");
+	mShow_V_flag->setId("O_V_flag");
+	mShow_V_flag->setChecked(false);
+#endif		
+
     mExtractBtn = new Button(window, "Extract", ENTYPO_ICON_FLASH);
     mExtractBtn->setBackgroundColor(Color(0, 255, 0, 25));
     mExtractBtn->setCallback([&]() {
@@ -388,7 +394,6 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 	mShow_E_done = new CheckBox(ConstraintsPopup, "Edge");
 	mShow_E_done->setId("showdoneE");
 	mShow_E_done->setChecked(false);
-
 
 	mOutputBtn = new Button(ConstraintsPopup, "Output", ENTYPO_ICON_FLASH);
 	mOutputBtn->setBackgroundColor(Color(0, 255, 0, 25));
@@ -569,6 +574,10 @@ void Viewer::drawContents() {
 	mOptimizer->setHierarchy(Configlayers[Config_Layers::Hierarchy]->checked());
 
 	mRes.setScale(mScaleBox->value());
+
+#ifdef T_VTAG
+	mRes.o_flag = mShow_V_flag->checked();
+#endif	
 
 	if (!mOptimizer->active()) {
         if (mSolveOrientationBtn->pushed()) {
