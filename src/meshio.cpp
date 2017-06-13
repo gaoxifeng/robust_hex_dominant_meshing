@@ -237,6 +237,10 @@ void load_obj(const std::string &filename, MatrixXu &F, MatrixXf &V) {
 
 	typedef std::unordered_map<obj_vertex, uint32_t, obj_vertexHash> VertexMap;
 
+	size_t last_slash_idx = filename.rfind('.');
+	if (filename.substr(last_slash_idx) != ".OBJ" && filename.substr(last_slash_idx) != ".obj") 
+		throw std::runtime_error("Unable to open OBJ file \"" + filename + "\"!");
+
 	std::ifstream is(filename);
 	if (is.fail())
 		throw std::runtime_error("Unable to open OBJ file \"" + filename + "\"!");
@@ -316,6 +320,38 @@ void load_obj(const std::string &filename, MatrixXu &F, MatrixXf &V) {
 		V.col(i) = positions.at(vertices[i].p - 1);
 }
 
+void load_off(const std::string &filename, std::vector < std::vector<uint32_t>> &F, MatrixXf &V){
+	FILE *ff = fopen(filename.data(), "rt");
+	char s[1024], sread[1024], sread2[1024];
+	int vnum, hnum;	float x, y, z;
+	if (fscanf(ff, "%s", &sread) != 1 || (strcmp(sread, "OFF") != 0))
+		throw std::runtime_error("cannot find head of OFF!");
+	
+	fscanf(ff, "%d %d", &vnum, &hnum);
+	V.resize(3, vnum);
+	V.setZero();
+	for (int i = 0; i<vnum; i++)
+	{
+		int framid;
+		fscanf(ff, "%f %f %f", &x, &y, &z);
+
+		V(0, i) = x;
+		V(1, i) = y;
+		V(2, i) = z;
+	}
+	F.clear();
+	F.resize(hnum);
+	for (int i = 0; i<hnum; i++){
+		int nw;
+		fscanf(ff, "%d", &nw);
+		F[i].resize(nw);
+		for (int j = 0; j<nw; j++) {
+			fscanf(ff, "%d", &(F[i][j]));
+		}
+	}
+
+	fclose(ff);
+}
 void loadTetMesh_VTK(const std::string &filename, MatrixXf &V, MatrixXu &F, MatrixXu &T)
 {
 	char file[300];

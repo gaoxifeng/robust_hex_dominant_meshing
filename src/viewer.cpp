@@ -1,4 +1,4 @@
-#include "viewer.h"
+﻿#include "viewer.h"
 #include "im_resources.h"
 #include "timer.h"
 #include "bvh.h"
@@ -119,14 +119,22 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 			extension = str_tolower(filename2.substr(filename2.size() - 4));
 
 		if (filename2.empty()) {
+#ifdef T_VTAG
+			filename2 = nanogui::file_dialog({
+				{ "obj", "Wavefront OBJ" }, { "off", "OFF" }
+			}, false);
+
+
+#else
 			filename2 = nanogui::file_dialog({
 				{ "obj", "Wavefront OBJ" }
 			}, false);
+#endif
 			if (filename2 == "")
 				return;
 		}
 
-		mRes.load(filename2);
+		if(!mRes.load(filename2)) return;
 		mScaleBox->setValue(mRes.scale());
 
 		filename = filename2;
@@ -269,12 +277,6 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
             updatePositionSingularities();
     });
 //Extraction
-#ifdef T_VTAG
-	mShow_V_flag = new CheckBox(window, "O_V_flag");
-	mShow_V_flag->setId("O_V_flag");
-	mShow_V_flag->setChecked(false);
-#endif		
-
     mExtractBtn = new Button(window, "Extract", ENTYPO_ICON_FLASH);
     mExtractBtn->setBackgroundColor(Color(0, 255, 0, 25));
     mExtractBtn->setCallback([&]() {
@@ -575,10 +577,6 @@ void Viewer::drawContents() {
 
 	mRes.setScale(mScaleBox->value());
 
-#ifdef T_VTAG
-	mRes.o_flag = mShow_V_flag->checked();
-#endif	
-
 	if (!mOptimizer->active()) {
         if (mSolveOrientationBtn->pushed()) {
             mSolveOrientationBtn->setPushed(false);
@@ -604,13 +602,16 @@ void Viewer::drawContents() {
     Eigen::Vector4f civ =
         (view * model).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
 
-    if (mRes.tetMesh()) {
-        mOrientationFieldShaderTet.bind();
-        mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
-    } else {
-        mOrientationFieldShaderTri.bind();
-        mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
-    }
+	if (mRes.Q().cols()>=3) {
+		if (mRes.tetMesh()) {
+			mOrientationFieldShaderTet.bind();
+			mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
+		}
+		else {
+			mOrientationFieldShaderTri.bind();
+			mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
+		}
+	}
 
     mPositionFieldShader.bind();
     mPositionFieldShader.uploadAttrib("o", mRes.O());
