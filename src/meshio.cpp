@@ -323,11 +323,11 @@ void load_obj(const std::string &filename, MatrixXu &F, MatrixXf &V) {
 void load_off(const std::string &filename, std::vector < std::vector<uint32_t>> &F, MatrixXf &V){
 	FILE *ff = fopen(filename.data(), "rt");
 	char s[1024], sread[1024], sread2[1024];
-	int vnum, hnum;	float x, y, z;
+	int vnum, hnum, r;	float x, y, z;
 	if (fscanf(ff, "%s", &sread) != 1 || (strcmp(sread, "OFF") != 0))
 		throw std::runtime_error("cannot find head of OFF!");
 	
-	fscanf(ff, "%d %d", &vnum, &hnum);
+	fscanf(ff, "%d %d %d", &vnum, &hnum, &r);
 	V.resize(3, vnum);
 	V.setZero();
 	for (int i = 0; i<vnum; i++)
@@ -347,6 +347,7 @@ void load_off(const std::string &filename, std::vector < std::vector<uint32_t>> 
 		F[i].resize(nw);
 		for (int j = 0; j<nw; j++) {
 			fscanf(ff, "%d", &(F[i][j]));
+			F[i][j]--;
 		}
 	}
 

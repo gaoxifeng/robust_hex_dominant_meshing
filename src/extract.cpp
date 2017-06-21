@@ -1742,9 +1742,10 @@ void MultiResolutionHierarchy::tagging_singularities_T_nodes(MatrixXf &V_tagging
 					Float dot_ = bes_vec.col(0).dot(bes_vec.col(1));
 					Float angle = std::acos(dot_);
 					Float cost = std::abs(angle - PAI);// (std::abs(n.sum()));
-					vs_rank.push_back(std::make_tuple(cost, v_id));
+					vs_rank.push_back(std::make_tuple(cost, F_tagging[i][v_id]));
 				}
 				sort(vs_rank.begin(), vs_rank.end());
+				
 				V_flag[get<1>(vs_rank[0])] = V_type::t_node;
 			}
 			else {
