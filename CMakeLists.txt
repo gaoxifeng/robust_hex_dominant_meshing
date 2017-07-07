@@ -133,6 +133,7 @@ add_custom_command(
 
 add_definitions(-DSINGLE_PRECISION)
 add_definitions(-DTETLIBRARY)
+#add_definitions(-DT_VTAG)
 
 # Resource file (icons etc.)
 set(EXTRA_SOURCE "")
@@ -142,7 +143,7 @@ elseif(WIN32)
   set(EXTRA_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/im.rc")
 endif()
 
-add_executable(robust_hex_dominant_meshing MACOSX_BUNDLE
+add_library(robust_hex_dominant_meshing_lib
   src/meshio.cpp src/meshio.h
   src/viewer.cpp src/viewer.h
   src/aabb.h
@@ -155,7 +156,6 @@ add_executable(robust_hex_dominant_meshing MACOSX_BUNDLE
   src/quat.h
   src/subdivide.h src/subdivide.cpp
   src/timer.h
-  src/main.cpp
   src/hierarchy.cpp src/hierarchy.h
   src/orient_triangle_mesh.cpp src/orient_triangle_mesh.h
   src/orientations.cpp src/orientations.h
@@ -166,7 +166,11 @@ add_executable(robust_hex_dominant_meshing MACOSX_BUNDLE
   im_resources.cpp
 )
 
-target_link_libraries(robust_hex_dominant_meshing tbb_static nanogui ${NANOGUI_EXTRA_LIBS} tet)
+add_executable(robust_hex_dominant_meshing MACOSX_BUNDLE
+  src/main.cpp
+)
+
+target_link_libraries(robust_hex_dominant_meshing robust_hex_dominant_meshing_lib tbb_static nanogui ${NANOGUI_EXTRA_LIBS} tet)
 
 set_target_properties(robust_hex_dominant_meshing PROPERTIES OUTPUT_NAME "robust_hex_dominant_meshing")
 
