@@ -120,7 +120,6 @@ protected:
 	Button *mOutputBtn;
 	CheckBox *mShow_F_done;
 	CheckBox *mShow_E_done;
-	CheckBox *mShow_V_flag;
 
     /* Visualization */
     GLShader mTetShader;

@@ -18,9 +18,6 @@ std::vector<bool> mE_flag, mF_flag;
 MatrixXf mQ_copy2D, mO_copy2D, mN_copy2D, mV_copy2D;
 MatrixXf newQ2D, newN2D, newV2D;
 bool non_manifold = false;
-//V_flag
-std::vector<std::vector<uint32_t>> mFs2D_O;
-std::vector<tuple_E> mEs_O;
 //2D===========================================================================================================//
 void construct_Es_FEs()
 {
@@ -808,9 +805,7 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 	mFs2D.resize(mF.cols());
 	for (uint32_t i = 0; i < mF.cols(); ++i) for (int j = 0; j < 3; ++j) mFs2D[i].push_back(mF(j, i));
 	construct_Es_FEs();
-
-	mFs2D_O = mFs2D; mEs_O = mEs;
-
+	
 	int genus_pre = -1, genus_aft = -1; bool manifoldness_pre = true, manifoldness_aft = true;
 	topology_check_2D(mFs2D, FEs, genus_pre, manifoldness_pre);
 	std::cout << "Input genus: " << genus_pre << "		manifoldness: " << manifoldness_pre << endl;
@@ -1019,7 +1014,7 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 
 #ifdef T_VTAG
 	cout << "TVTAG" << endl;
-	tagging_singularities_T_nodes();
+	tagging_singularities_T_nodes(mV_tag, mEs, F_tag);
 #endif
 
 	return true;
@@ -1687,7 +1682,7 @@ Float MultiResolutionHierarchy::compute_cost_edge2D_angle(int32_t v0, int32_t v1
 
 	return angles[0];
 }
-void MultiResolutionHierarchy::tagging_singularities_T_nodes() {
+void MultiResolutionHierarchy::tagging_singularities_T_nodes(MatrixXf &V_tagging, vector<tuple_E> &E_tagging, vector<vector<uint32_t>> &F_tagging) {
 	enum  V_type
 	{
 		regular = 0,
@@ -1696,21 +1691,6 @@ void MultiResolutionHierarchy::tagging_singularities_T_nodes() {
 		boundary,
 		s_t_node,
 	};
-
-	MatrixXf V_tagging;
-	std::vector<tuple_E> E_tagging;
-	std::vector<std::vector<uint32_t>> F_tagging;
-	if (o_flag) {
-		V_tagging = mV[0];
-		E_tagging = mEs_O;
-		F_tagging = mFs2D_O;
-	}
-	else {
-		V_tagging = mV_tag;
-		E_tagging = mEs;
-		F_tagging = F_tag;
-	}
-
 
 	vector<std::vector<uint32_t>> Vs_nes(V_tagging.cols()), Vs_nfs(V_tagging.cols());
 	vector<bool> mV_B_flag(V_tagging.cols(), false);
@@ -1762,9 +1742,10 @@ void MultiResolutionHierarchy::tagging_singularities_T_nodes() {
 					Float dot_ = bes_vec.col(0).dot(bes_vec.col(1));
 					Float angle = std::acos(dot_);
 					Float cost = std::abs(angle - PAI);// (std::abs(n.sum()));
-					vs_rank.push_back(std::make_tuple(cost, v_id));
+					vs_rank.push_back(std::make_tuple(cost, F_tagging[i][v_id]));
 				}
 				sort(vs_rank.begin(), vs_rank.end());
+				
 				V_flag[get<1>(vs_rank[0])] = V_type::t_node;
 			}
 			else {

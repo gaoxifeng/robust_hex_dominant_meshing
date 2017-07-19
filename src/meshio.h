@@ -5,7 +5,7 @@
 extern void loadTetMesh(const std::string &prefix, MatrixXf &V, MatrixXu &F, MatrixXu &T);
 extern void loadTriMesh(const std::string &filename, MatrixXf &V, MatrixXu &F);
 extern void load_obj(const std::string &filename, MatrixXu &F, MatrixXf &V);
-
+extern void load_off(const std::string &filename, std::vector<std::vector<uint32_t>> &F, MatrixXf &V);
 extern void loadTetMesh_VTK(const std::string &prefix, MatrixXf &V, MatrixXu &F, MatrixXu &T);
 extern void loadTetMesh_MESH(const std::string &prefix, MatrixXf &V, MatrixXu &F, MatrixXu &T);
 

@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/vvpv7t7oobr47i8g?svg=true)](https://ci.appveyor.com/project/gaoxifeng/robust-hex-dominant-meshing)
+
 # Robust Quad/Hex-dominant Meshes
 
 This repository contains the meshing software developed as part of the publication

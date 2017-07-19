@@ -19,7 +19,6 @@ MultiResolutionHierarchy::MultiResolutionHierarchy() {
 	tet_elen = 0.6;
 	re_color = true;
 	Qquadric = splitting = decomposes = doublets = triangles = false;
-	o_flag = false;
 }
 
 bool MultiResolutionHierarchy::load(const std::string &filename) {
@@ -34,6 +33,18 @@ bool MultiResolutionHierarchy::load(const std::string &filename) {
 	}
 	catch (const std::exception &e) {
 		std::cout << "failed loading obj file." << std::endl;
+#ifdef T_VTAG
+		std::vector<std::vector<uint32_t>> mFs2D_O;
+		load_off(filename, mFs2D_O, mV[0]);
+		std::vector<tuple_E> mEs_O;
+		std::vector<std::vector<uint32_t>> mFes_O;
+		construct_tEs_tFEs(mFs2D_O, mFes_O, mEs_O);
+		tagging_singularities_T_nodes(mV[0], mEs_O, mFs2D_O);
+		char path[300];
+		sprintf(path, "%s%s", filename.c_str(), "_V_flag.txt");
+		write_Vertex_Types_TXT(V_flag, path);
+
+#endif
 		return false;
 	}
 
