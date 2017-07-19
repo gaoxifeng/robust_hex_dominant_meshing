@@ -9,7 +9,7 @@ Optimizer::Optimizer(MultiResolutionHierarchy &mRes)
 
 void Optimizer::setOptimizeOrientations(bool value) {
     std::lock_guard<ordered_lock> lock(mRes.mutex());
-	if (mRes.tetMesh()) mMaxIterations = 200;else mMaxIterations = 20;
+	if (mRes.tetMesh()) mMaxIterations = 200;else mMaxIterations = 100;
     mOptimizeOrientations = value;
     mLevel = mRes.levels() - 2;
     mLevelIterations = 0;
@@ -17,7 +17,7 @@ void Optimizer::setOptimizeOrientations(bool value) {
 
 void Optimizer::setOptimizePositions(bool value) {
     std::lock_guard<ordered_lock> lock(mRes.mutex());
-	if (mRes.tetMesh()) mMaxIterations = 200; else mMaxIterations = 20;
+	if (mRes.tetMesh()) mMaxIterations = 200; else mMaxIterations = 100;
 	mOptimizePositions = value;
     mLevel = mRes.levels() - 2;
     mLevelIterations = 0;
@@ -51,22 +51,22 @@ void Optimizer::run() {
 
         mLevelIterations++;
 
-        if (mHierarchy) {
-            if (mLevelIterations >= mMaxIterations) {
-                mLevelIterations = 0;
-                if (mLevel == 0) {
-                    mOptimizeOrientations = false;
-                    mOptimizePositions = false;
-					notify();
-					continue;
-                }
-                mLevel--;
-                if (mOptimizeOrientations)
-                    mRes.prolongOrientations(mLevel);
-                if (mOptimizePositions)
-                    mRes.prolongPositions(mLevel);
-            }
-        }
+		if (mLevelIterations >= mMaxIterations) {
+			mLevelIterations = 0;
+			if (mLevel == 0) {
+				mOptimizeOrientations = false;
+				mOptimizePositions = false;
+				notify();
+				continue;
+			}
+			if (mHierarchy) {
+				mLevel--;
+				if (mOptimizeOrientations)
+					mRes.prolongOrientations(mLevel);
+				if (mOptimizePositions)
+					mRes.prolongPositions(mLevel);
+			}
+		}
 
         if (!mRunning)
             break;

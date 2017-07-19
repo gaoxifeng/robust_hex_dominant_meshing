@@ -604,16 +604,16 @@ void Viewer::drawContents() {
     Eigen::Vector4f civ =
         (view * model).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
 
-    if (mRes.tetMesh()) {
-        mOrientationFieldShaderTet.bind();
-        mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
-    } else {
-        mOrientationFieldShaderTri.bind();
-        mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
-    }
+    //if (mRes.tetMesh()) {
+    //    mOrientationFieldShaderTet.bind();
+    //    mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
+    //} else {
+    //    mOrientationFieldShaderTri.bind();
+    //    mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
+    //}
 
-    mPositionFieldShader.bind();
-    mPositionFieldShader.uploadAttrib("o", mRes.O());
+    //mPositionFieldShader.bind();
+    //mPositionFieldShader.uploadAttrib("o", mRes.O());
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);

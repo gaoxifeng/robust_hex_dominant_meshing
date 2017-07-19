@@ -128,24 +128,5 @@ void batch_process(char *input, char *output,
 		write_volume_mesh_HYBRID(mRes.mV_tag, mRes.F_tag, mRes.P_tag, mRes.Hex_flag, mRes.PF_flag, path);
 		sprintf(path, "%s%s", output, "_statistics.txt");
 		write_statistics_TXT(mRes.sta, path);
-
-
-		//char vtk_mesh[300], mesh_mesh[300], obj_mesh[300];
-		//sprintf(vtk_mesh, "%s%s", output, ".vtk");
-		//sprintf(obj_mesh, "%s%s", output, ".obj");
-
-		//write_surface_mesh_OBJ(mRes.mV_tag, mRes.F_tag, obj_mesh);
 	}
-	//else
-	//{
-	//	char vtk_mesh[300], mesh_mesh[300], obj_mesh[300];
-	//	sprintf(vtk_mesh, "%s%s", output, ".vtk");
-	//	sprintf(mesh_mesh, "%s%s", output, ".mesh");
-	//	sprintf(obj_mesh, "%s%s", output, ".obj");
-
-	//	write_volume_mesh_VTK(mPVs, mRes.mF_done_tagging, vtk_mesh);
-	//	write_volume_mesh_MESH(mPVs, mRes.mF_done_tagging, mesh_mesh);
-	//	write_surface_mesh_OBJ(mPVsB, Fs_boundary, obj_mesh);
-	//}
-	//system("PAUSE");
 }
