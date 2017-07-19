@@ -626,7 +626,6 @@ void Viewer::drawContents() {
 
     mPositionFieldShader.bind();
     mPositionFieldShader.uploadAttrib("o", mRes.O());
->>>>>>> a9cd2ed4d926cc392baf7526154ddd539908f36b
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
