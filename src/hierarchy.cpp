@@ -573,6 +573,8 @@ void MultiResolutionHierarchy::build() {
 
 					if (std::abs(direct0.dot(direct1)) < 0.5)
 						mQ[i].col(j) = direct0;
+					else if (direct0 + direct1 == Vector3f::Zero())
+						mQ[i].col(j) = direct0;
 					else
 						mQ[i].col(j) = (direct0 + direct1).normalized();
 					continue;
