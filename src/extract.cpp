@@ -1362,7 +1362,7 @@ bool MultiResolutionHierarchy::split_face2D(bool red_edge) {
 
 	for (uint32_t i = 0; i < mFs2D.size(); i++) {
 
-		if (mFs2D[i].size() < 6) continue;
+		if (mFs2D[i].size() < 5) continue;
 
 		std::vector<uint32_t> &es = FEs[i], es_temp, &vs = mFs2D[i];
 		//orient es direction

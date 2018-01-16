@@ -890,7 +890,7 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 	edge_tagging3D(ledges);
 
 	mV_tag = mO[0]; newQ = mQ[0]; newN3D = mN[0]; newQu3D = Quadric_copy;
-	//vertex insert.
+	////vertex insert.
 	if (ledges.size() && splitting) {
 		split_long_edge3D(ledges);
 	}
@@ -1015,6 +1015,15 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 		}
 	}
 	//output
+////========for quick tets output=============
+//	mV_tag = mV[0];
+//	swap_data3D();
+//PF_flag.clear();
+//orient_hybrid_mesh(mV_tag, F_tag, P_tag, PF_flag);
+//char path_temp[512] = "C:/xgao/meshing/code/robust_instant_meshing/datasets/volume/cube_tet.HYBRID";
+//write_volume_mesh_HYBRID(mV_tag, F_tag, P_tag, Hex_flag, PF_flag, path_temp);
+//system("PAUSE");
+////========for quick tets output=============
 	PF_flag.clear();
 	orient_hybrid_mesh(mV_tag, F_tag, P_tag, PF_flag);
 
@@ -1022,8 +1031,6 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 	E_final_rend.resize(6, 2 * mpEs.size());
 	composit_edges_colors(mV_tag, mpEs, E_final_rend);
 	composit_edges_centernodes_triangles(F_tag, mV_tag, E_final_rend, mV_final_rend, F_final_rend);
-
-
 
 	cout << "done with extraction!" << endl;
 }

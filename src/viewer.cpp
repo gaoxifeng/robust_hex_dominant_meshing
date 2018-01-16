@@ -285,7 +285,7 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 			mRes.re_color = true;
 			mRes.doublets = true;
 			mRes.splitting = true;
-			mRes.triangles = true;
+			mRes.triangles = false;//true;
 			mRes.decomposes = true;
 
 			mRes.meshExtraction2D();
@@ -578,154 +578,141 @@ void Viewer::drawContents() {
 	mRes.setScale(mScaleBox->value());
 
 	if (!mOptimizer->active()) {
-        if (mSolveOrientationBtn->pushed()) {
-            mSolveOrientationBtn->setPushed(false);
-            updateOrientationSingularities();
-        }
-        if (mSolvePositionBtn->pushed()) {
-            mSolvePositionBtn->setPushed(false);
-            updatePositionSingularities();
-        }
-    } else if (!mOptimizer->hierarchy()) {
-        if (mSolveOrientationBtn->pushed())
-            updateOrientationSingularities();
-    }
+		if (mSolveOrientationBtn->pushed()) {
+			mSolveOrientationBtn->setPushed(false);
+			updateOrientationSingularities();
+		}
+		if (mSolvePositionBtn->pushed()) {
+			mSolvePositionBtn->setPushed(false);
+			updatePositionSingularities();
+		}
+	}
+	else if (!mOptimizer->hierarchy()) {
+		if (mSolveOrientationBtn->pushed())
+			updateOrientationSingularities();
+	}
 	if (mTmeshingBtn->pushed()) {
 		mTmeshingBtn->setPushed(false);
 	}
 	if (mSolveDatastructureBtn->pushed()) {
 		mSolveDatastructureBtn->setPushed(false);
 	}
-    Eigen::Matrix4f model, view, proj;
-    computeCameraMatrices(model, view, proj);
-    Eigen::Matrix4f mvp = proj * view * model;
-    Eigen::Vector4f civ =
-        (view * model).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
+	Eigen::Matrix4f model, view, proj;
+	computeCameraMatrices(model, view, proj);
+	Eigen::Matrix4f mvp = proj * view * model;
+	Eigen::Vector4f civ =
+		(view * model).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
 
-    if (mRes.tetMesh()) {
-        mOrientationFieldShaderTet.bind();
-        mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
-    } else {
-        mOrientationFieldShaderTri.bind();
-        mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
-    }
-
-    mPositionFieldShader.bind();
-    mPositionFieldShader.uploadAttrib("o", mRes.O());
-
-	if (mRes.Q().cols()>=3) {
-		if (mRes.tetMesh()) {
-			mOrientationFieldShaderTet.bind();
-			mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
-		}
-		else {
-			mOrientationFieldShaderTri.bind();
-			mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
-		}
+	if (mRes.tetMesh()) {
+		mOrientationFieldShaderTet.bind();
+		mOrientationFieldShaderTet.uploadAttrib("q", mRes.Q());
+	}
+	else {
+		mOrientationFieldShaderTri.bind();
+		mOrientationFieldShaderTri.uploadAttrib("q", mRes.Q());
 	}
 
-    mPositionFieldShader.bind();
-    mPositionFieldShader.uploadAttrib("o", mRes.O());
+	mPositionFieldShader.bind();
+	mPositionFieldShader.uploadAttrib("o", mRes.O());
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-    glDisable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_BLEND);
 
-    if (mLayers[Tetrahedra]->checked()) {
-        mTetShader.bind();
-        mTetShader.setUniform("light_position", mLightPosition);
-        mTetShader.setUniform("model", model);
-        mTetShader.setUniform("view", view);
-        mTetShader.setUniform("proj", proj);
-        mTetShader.setUniform("base_color", mBaseColor);
-        //mTetShader.setUniform("specular_color", mSpecularColor);
-        mTetShader.setUniform("split", mSplit);
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        mTetShader.drawIndexed(GL_LINES_ADJACENCY, 0, mRes.tetCount() * 4);
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
-    glPointSize(15);
+	if (mLayers[Tetrahedra]->checked()) {
+		mTetShader.bind();
+		mTetShader.setUniform("light_position", mLightPosition);
+		mTetShader.setUniform("model", model);
+		mTetShader.setUniform("view", view);
+		mTetShader.setUniform("proj", proj);
+		mTetShader.setUniform("base_color", mBaseColor);
+		//mTetShader.setUniform("specular_color", mSpecularColor);
+		mTetShader.setUniform("split", mSplit);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		mTetShader.drawIndexed(GL_LINES_ADJACENCY, 0, mRes.tetCount() * 4);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+	glPointSize(5);
 	// This must be enabled, otherwise glLineWidth has no effect
-	glEnable(GL_LINE_SMOOTH);
-	glLineWidth(5);
+	//glEnable(GL_LINE_SMOOTH);
+	//glLineWidth(5);
+	if (mLayers[OrientationField]->checked()) {
+		auto &shader = mRes.tetMesh() ? mOrientationFieldShaderTet : mOrientationFieldShaderTri;
+		shader.bind();
+		shader.setUniform("mvp", mvp);
+		shader.setUniform("split", mSplit, false);
+		shader.setUniform("scale", mRes.averageEdgeLength() / 3);
+		shader.drawArray(GL_POINTS, 0, mRes.tetMesh() ? mRes.tetCount() : mRes.faceCount());
+	}
 
-    if (mLayers[OrientationField]->checked()) {
-        auto &shader = mRes.tetMesh() ? mOrientationFieldShaderTet : mOrientationFieldShaderTri;
-        shader.bind();
-        shader.setUniform("mvp", mvp);
-        shader.setUniform("split", mSplit, false);
-        shader.setUniform("scale", mRes.averageEdgeLength() / 3);
-        shader.drawArray(GL_POINTS, 0, mRes.tetMesh() ? mRes.vertexCount() : mRes.vertexCount());
-    }
+	if (mLayers[PositionField]->checked()) {
+		mPositionFieldShader.bind();
+		mPositionFieldShader.setUniform("mvp", mvp);
+		mPositionFieldShader.setUniform("split", mSplit, false);
+		mPositionFieldShader.drawArray(GL_POINTS, 0, mRes.vertexCount());
+	}
 
-    if (mLayers[PositionField]->checked()) {
-        mPositionFieldShader.bind();
-        mPositionFieldShader.setUniform("mvp", mvp);
-        mPositionFieldShader.setUniform("split", mSplit, false);
-        mPositionFieldShader.drawArray(GL_POINTS, 0, mRes.vertexCount());
-    }
+	if (mLayers[OrientationSingularities]->checked()) {
+		auto &shader = mRes.tetMesh() ? mOrientationSingularityShaderTet : mOrientationSingularityShaderTri;
+		shader.bind();
+		shader.setUniform("split", mSplit, false);
+		shader.setUniform("mvp", mvp);
+		shader.setUniform("scale", mRes.averageEdgeLength(), false);
+		shader.drawArray(mRes.tetMesh() ? GL_LINES : GL_POINTS, 0, mRes.orientationSingularities().cols());
+	}
 
-    if (mLayers[OrientationSingularities]->checked()) {
-        auto &shader = mRes.tetMesh() ? mOrientationSingularityShaderTet : mOrientationSingularityShaderTri;
-        shader.bind();
-        shader.setUniform("split", mSplit, false);
-        shader.setUniform("mvp", mvp);
-        shader.setUniform("scale", mRes.averageEdgeLength(), false);
-        shader.drawArray(mRes.tetMesh() ? GL_LINES : GL_POINTS, 0, mRes.orientationSingularities().cols());
-    }
+	if (mLayers[PositionSingularities]->checked()) {
+		auto &shader = mRes.tetMesh() ? mPositionSingularityShaderTet : mPositionSingularityShaderTri;
+		shader.bind();
+		shader.setUniform("split", mSplit, false);
+		shader.setUniform("mvp", mvp);
+		shader.setUniform("scale", mRes.averageEdgeLength(), false);
+		shader.drawArray(mRes.tetMesh() ? GL_LINES : GL_POINTS, 0, mRes.positionSingularities().cols());
+	}
 
-    if (mLayers[PositionSingularities]->checked()) {
-        auto &shader = mRes.tetMesh() ? mPositionSingularityShaderTet : mPositionSingularityShaderTri;
-        shader.bind();
-        shader.setUniform("split", mSplit, false);
-        shader.setUniform("mvp", mvp);
-        shader.setUniform("scale", mRes.averageEdgeLength(), false);
-        shader.drawArray(mRes.tetMesh() ? GL_LINES : GL_POINTS, 0, mRes.positionSingularities().cols());
-    }
+	if (mLayers[Boundary]->checked()) {
+		if (mRes.tetMesh()) {
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
+		mMeshShader.bind();
+		mMeshShader.setUniform("light_position", mLightPosition);
+		mMeshShader.setUniform("model", model);
+		mMeshShader.setUniform("view", view);
+		mMeshShader.setUniform("proj", proj);
+		mMeshShader.setUniform("base_color", mBaseColorBoundary);
+		//mMeshShader.setUniform("specular_color", mSpecularColorBoundary);
+		glEnable(GL_POLYGON_OFFSET_FILL);
+		glPolygonOffset(1.0, 1.0);
 
-    if (mLayers[Boundary]->checked()) {
-        if (mRes.tetMesh()) {
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        }
-        mMeshShader.bind();
-        mMeshShader.setUniform("light_position", mLightPosition);
-        mMeshShader.setUniform("model", model);
-        mMeshShader.setUniform("view", view);
-        mMeshShader.setUniform("proj", proj);
-        mMeshShader.setUniform("base_color", mBaseColorBoundary);
-        //mMeshShader.setUniform("specular_color", mSpecularColorBoundary);
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(1.0, 1.0);
+		if (mRes.tetMesh()) {
+			glDepthFunc(GL_LEQUAL);
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+			mMeshShader.drawIndexed(GL_TRIANGLES, 0, mRes.faceCount());
+			glDepthFunc(GL_EQUAL);
+			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+			mMeshShader.drawIndexed(GL_TRIANGLES, 0, mRes.faceCount());
+			glDepthFunc(GL_LEQUAL);
+		}
+		else {
+			mMeshShader.drawIndexed(GL_TRIANGLES, 0, mRes.faceCount());
+		}
+		glDisable(GL_POLYGON_OFFSET_FILL);
+	}
 
-        if (mRes.tetMesh()) {
-            glDepthFunc(GL_LEQUAL);
-            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-            mMeshShader.drawIndexed(GL_TRIANGLES, 0, mRes.faceCount());
-            glDepthFunc(GL_EQUAL);
-            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            mMeshShader.drawIndexed(GL_TRIANGLES, 0, mRes.faceCount());
-            glDepthFunc(GL_LEQUAL);
-        } else {
-            mMeshShader.drawIndexed(GL_TRIANGLES, 0, mRes.faceCount());
-        }
-        glDisable(GL_POLYGON_OFFSET_FILL);
-    }
-
-    if (mLayers[BoundaryWireframe]->checked()) {
-        mMeshShader.bind();
-        mMeshShader.setUniform("light_position", mLightPosition);
-        mMeshShader.setUniform("model", model);
-        mMeshShader.setUniform("view", view);
-        mMeshShader.setUniform("proj", proj);
-        mMeshShader.setUniform("base_color", Vector4f(Vector4f::Constant(0.f)));
-        mMeshShader.setUniform("specular_color", Vector4f(Vector4f::Constant(0.f)));
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        mMeshShader.drawIndexed(GL_TRIANGLES, 0, mRes.faceCount());
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
+	if (mLayers[BoundaryWireframe]->checked()) {
+		mMeshShader.bind();
+		mMeshShader.setUniform("light_position", mLightPosition);
+		mMeshShader.setUniform("model", model);
+		mMeshShader.setUniform("view", view);
+		mMeshShader.setUniform("proj", proj);
+		mMeshShader.setUniform("base_color", Vector4f(Vector4f::Constant(0.f)));
+		mMeshShader.setUniform("specular_color", Vector4f(Vector4f::Constant(0.f)));
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		mMeshShader.drawIndexed(GL_TRIANGLES, 0, mRes.faceCount());
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 
 	if (mEdgeTagging->checked()) {
 		mExtractionResultShader.bind();
@@ -760,6 +747,7 @@ void Viewer::drawContents() {
 		shader.setUniform("mvp", mvp);
 		shader.drawArray(GL_LINES, 0, mRes.E_final_rend.cols());
 	}
+
 }
 
 bool Viewer::keyboardEvent(int key, int scancode, int action, int modifiers) {
