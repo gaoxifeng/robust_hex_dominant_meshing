@@ -183,7 +183,7 @@ Viewer::Viewer(std::string &filename, bool fullscreen)
 
 //2D&3D
 	Widget *statePanel = new Widget(window);
-	statePanel->setLayout(new BoxLayout(Orientation::Horizontal, Alignment::Middle, 0, 5));
+	statePanel->setLayout(new BoxLayout(Orientation::Horizontal, nanogui::Alignment::Middle, 0, 5));
 	mSolveDatastructureBtn = new Button(statePanel, "Surface", ENTYPO_ICON_FLASH);
 	mSolveDatastructureBtn->setBackgroundColor(Color(0, 0, 255, 25));
 	mSolveDatastructureBtn->setFlags(Button::Flags::ToggleButton);

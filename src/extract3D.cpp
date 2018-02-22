@@ -890,7 +890,7 @@ bool MultiResolutionHierarchy::meshExtraction3D() {
 	edge_tagging3D(ledges);
 
 	mV_tag = mO[0]; newQ = mQ[0]; newN3D = mN[0]; newQu3D = Quadric_copy;
-	////vertex insert.
+	//vertex insert.
 	if (ledges.size() && splitting) {
 		split_long_edge3D(ledges);
 	}

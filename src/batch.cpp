@@ -32,7 +32,6 @@ void batch_process(char *input, char *output,
 	Timer<> timer;
 	timer.beginStage("data pre-processing");
 	mRes.load(input);
-	return;
 	MeshStats stats = mRes.compute_mesh_stats(mRes.F(), mRes.V(0));
 
 	if (dimension ==2 && ((stats.mMaximumEdgeLength * 4 / stats.mAverageEdgeLength > scale || stats.mMaximumEdgeLength > stats.mAverageEdgeLength * 1.5))) {
